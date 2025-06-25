@@ -3,12 +3,11 @@ package com.example.koztnowplaying
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,12 +29,16 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Data classes to match the actual JSON structure
+// --- Data Classes for State and JSON Parsing ---
 @Serializable
 data class Performance(val artist: String, val title: String)
 
 @Serializable
 data class NowPlayingResponse(val performances: List<Performance>)
+
+data class FetchResult(val song: String, val artist: String, val logMessage: String)
+
+data class LogEntry(val timestamp: String, val message: String)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,48 +57,75 @@ class MainActivity : ComponentActivity() {
 fun NowPlayingScreen() {
     var song by remember { mutableStateOf("Loading...") }
     var artist by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val logMessages = remember { mutableStateListOf<LogEntry>() }
 
     LaunchedEffect(Unit) {
         while (true) {
-            val (newSong, newArtist, newError) = fetchNowPlaying()
-            song = newSong
-            artist = newArtist
-            errorMessage = newError
-            delay(10000) // Refresh every 10 seconds
+            val result = fetchNowPlaying()
+            song = result.song
+            artist = result.artist
+            
+            val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+            logMessages.add(0, LogEntry(timestamp, result.logMessage))
+            if (logMessages.size > 100) {
+                logMessages.removeLast()
+            }
+            
+            delay(15000) // Refresh every 15 seconds
         }
     }
 
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Top section for Now Playing info
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center)
+            Text(text = artist, fontSize = 28.sp, textAlign = TextAlign.Center)
+        }
+        // Bottom section for scrollable logs
+        LogDisplay(logMessages)
+    }
+}
+
+@Composable
+fun LogDisplay(logMessages: List<LogEntry>) {
+    val listState = rememberLazyListState()
+    
+    LaunchedEffect(logMessages.size) {
+        // Automatically scroll to the top when a new message arrives
+        listState.animateScrollToItem(0)
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(0.5f) // Takes up the bottom third of the screen
+            .background(Color.DarkGray)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Text(
-            text = song,
-            fontSize = 40.sp,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = artist,
-            fontSize = 28.sp,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        errorMessage?.let {
-            Text(
-                text = it,
-                fontSize = 14.sp,
-                color = Color.Yellow,
-                textAlign = TextAlign.Center
-            )
+        Text("Logs", fontSize = 16.sp, color = Color.White, modifier = Modifier.padding(bottom = 4.dp))
+        LazyColumn(state = listState) {
+            items(logMessages) { entry ->
+                Text(
+                    text = "${entry.timestamp}: ${entry.message}",
+                    color = if (entry.message.contains("Success")) Color.Green else if (entry.message.contains("Failed")) Color.Yellow else Color.White,
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
         }
     }
 }
 
 private val json = Json { ignoreUnknownKeys = true }
 
-suspend fun fetchNowPlaying(): Triple<String, String, String?> = withContext(Dispatchers.IO) {
+suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
     // 1. Try the primary JSON source first
     try {
         val jsonString = URL("https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json").readText()
@@ -103,13 +134,12 @@ suspend fun fetchNowPlaying(): Triple<String, String, String?> = withContext(Dis
             ?: throw IllegalStateException("Primary source returned no performances.")
         
         if (nowPlaying.title.isBlank()) {
-            throw IllegalStateException("Primary source returned empty title.")
+            throw IllegalStateException("Primary source returned empty title (commercial break?).")
         }
-        return@withContext Triple(nowPlaying.title, nowPlaying.artist, null) // Success
+        FetchResult(nowPlaying.title, nowPlaying.artist, "Success: Parsed data from primary source.")
     } catch (e: Exception) {
-        // 2. If primary fails, prepare an error message and try the fallback
-        val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-        val errorMsg = "Primary source failed at $timestamp. Using fallback."
+        val errorLog = "Primary source failed: ${e.message}. Using fallback."
+        // 2. If primary fails, try the fallback
         try {
             val doc = Jsoup.connect("https://kozt.com/now-playing/").get()
             val songTitle = doc.selectFirst(".song-title")?.text() ?: ""
@@ -117,10 +147,10 @@ suspend fun fetchNowPlaying(): Triple<String, String, String?> = withContext(Dis
             if (songTitle.isBlank() || artistName.isBlank()) {
                 throw IllegalStateException("Fallback source returned empty data.")
             }
-            Triple(songTitle, artistName, errorMsg)
+            FetchResult(songTitle, artistName, errorLog)
         } catch (e2: Exception) {
             // 3. If both fail, return a hardcoded error
-            Triple("Now Playing", "(Data currently unavailable)", "Both sources failed to provide data.")
+            FetchResult("Now Playing", "(Data currently unavailable)", "Fatal: Both sources failed. Retrying...")
         }
     }
 }
