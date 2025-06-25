@@ -1,14 +1,15 @@
-# macOS
-.DS_Store
-
-# Node.js
-node_modules/
-dist/
-.env
-
 # Python
-__pycache__/
-*.py[cod]
-*.env
 .venv/
-venv/
+__pycache__/
+
+# Android/Gradle
+*.apk
+*.aab
+*.jar
+.gradle
+build/
+
+# IDE files
+.idea/
+*.iml
+.DS_Store
