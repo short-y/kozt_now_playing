@@ -3,7 +3,6 @@ package com.example.koztnowplaying
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,7 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -88,20 +87,21 @@ fun NowPlayingScreen() {
     AnimatedGradientBackground {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
-            val mainContentModifier = if (isWideScreen) Modifier.weight(1f) else Modifier.weight(if (showLogs) 0.6f else 1f)
-            val logModifier = if (isWideScreen) Modifier.weight(1f) else Modifier.weight(0.4f)
-
-            val layout: @Composable () -> Unit = {
-                NowPlayingInfo(mainContentModifier, song, artist, album, label, startTime) { showLogs = !showLogs }
-                if (showLogs) {
-                    LogDisplay(logModifier, logMessages)
-                }
-            }
 
             if (isWideScreen) {
-                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) { layout() }
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime) { showLogs = !showLogs }
+                    if (showLogs) {
+                        LogDisplay(Modifier.weight(1f), logMessages)
+                    }
+                }
             } else {
-                Column(Modifier.fillMaxSize()) { layout() }
+                Column(Modifier.fillMaxSize()) {
+                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime) { showLogs = !showLogs }
+                    if (showLogs) {
+                        LogDisplay(Modifier.weight(0.4f), logMessages)
+                    }
+                }
             }
         }
     }
@@ -163,16 +163,26 @@ fun LogDisplay(modifier: Modifier = Modifier, logMessages: List<LogEntry>) {
 @Composable
 fun AnimatedGradientBackground(content: @Composable () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
-    val colors = listOf(Color(0xFF1a237e), Color(0xFF0d47a1), Color(0xFF01579b), Color(0xFF006064))
-    
-    val animatedColors = colors.map {
-        animateColorAsState(it, animationSpec = tween(durationMillis = 6000, easing = LinearEasing)).value
-    }
+    val animatedRadius = infiniteTransition.animateFloat(
+        initialValue = 800f,
+        targetValue = 1200f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 
-    val brush = Brush.radialGradient(colors = animatedColors)
+    val colors = listOf(Color(0xFF0d47a1), Color(0xFF000000))
 
-    Surface(modifier = Modifier.fillMaxSize().drawWithCache { onDraw { drawRect(brush) } }) {
-        content()
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().drawBehind { 
+            drawRect(Brush.radialGradient(
+                colors = colors,
+                radius = animatedRadius.value
+            ))
+        }) {
+            content()
+        }
     }
 }
 
