@@ -1,0 +1,69 @@
+
+import requests
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+def get_now_playing():
+    url = "http://stream.abacast.net/playlist/caradio-koztfmaac-ibc3.m3u"
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        icy_metaint_header = response.headers.get("icy-metaint")
+        if not icy_metaint_header:
+            return {"error": "Stream does not support metadata."}
+            
+        metaint = int(icy_metaint_header)
+        
+        # Read until metadata is found
+        while True:
+            response.raw.read(metaint)
+            
+            # Read metadata length byte
+            meta_length_byte = response.raw.read(1)
+            if not meta_length_byte:
+                continue
+                
+            meta_length = ord(meta_length_byte) * 16
+            
+            # Read metadata
+            if meta_length > 0:
+                metadata = response.raw.read(meta_length).rstrip(b'\x00')
+                
+                # Extract title
+                for meta_part in metadata.split(b';'):
+                    if meta_part.startswith(b"StreamTitle='"):
+                        title = meta_part[len(b"StreamTitle='"):-1].decode('utf-8', 'ignore')
+                        
+                        # Split artist and song
+                        if ' - ' in title:
+                            artist, song = title.split(' - ', 1)
+                            return {"artist": artist.strip(), "song": song.strip()}
+                        else:
+                            return {"artist": "", "song": title.strip()}
+                
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+    except Exception as e:
+        return {"error": str(e)}
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/nowplaying':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(get_now_playing()).encode('utf-8'))
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+def run(server_class=HTTPServer, handler_class=handler, port=8000):
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+    print(f"Starting httpd server on port {port}")
+    httpd.serve_forever()
+
+if __name__ == "__main__":
+    run()
