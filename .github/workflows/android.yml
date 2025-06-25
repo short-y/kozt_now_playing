@@ -31,4 +31,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: kozt-now-playing-apk
-        path: app/build/outputs/apk/debug/kozt-now-playing-debug-1.0.apk
+        path: app/build/outputs/apk/debug/kozt-now-playing-*.apk
