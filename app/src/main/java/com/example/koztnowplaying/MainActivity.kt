@@ -64,13 +64,13 @@ fun NowPlayingScreen() {
             val result = fetchNowPlaying()
             song = result.song
             artist = result.artist
-            
+
             val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
             logMessages.add(0, LogEntry(timestamp, result.logMessage))
             if (logMessages.size > 100) {
                 logMessages.removeLast()
             }
-            
+
             delay(15000) // Refresh every 15 seconds
         }
     }
@@ -80,7 +80,7 @@ fun NowPlayingScreen() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f) // This takes up the remaining space
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -89,23 +89,25 @@ fun NowPlayingScreen() {
             Text(text = artist, fontSize = 28.sp, textAlign = TextAlign.Center)
         }
         // Bottom section for scrollable logs
-        LogDisplay(logMessages)
+        LogDisplay(
+            modifier = Modifier.weight(0.5f), // The weight is applied here, to a direct child of the Column
+            logMessages = logMessages
+        )
     }
 }
 
 @Composable
-fun LogDisplay(logMessages: List<LogEntry>) {
+fun LogDisplay(modifier: Modifier = Modifier, logMessages: List<LogEntry>) {
     val listState = rememberLazyListState()
-    
+
     LaunchedEffect(logMessages.size) {
         // Automatically scroll to the top when a new message arrives
-        listState.animateScrollToItem(0)
+        if (logMessages.isNotEmpty()) listState.animateScrollToItem(0)
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier // The passed-in modifier is used here
             .fillMaxWidth()
-            .weight(0.5f) // Takes up the bottom third of the screen
             .background(Color.DarkGray)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
@@ -114,7 +116,7 @@ fun LogDisplay(logMessages: List<LogEntry>) {
             items(logMessages) { entry ->
                 Text(
                     text = "${entry.timestamp}: ${entry.message}",
-                    color = if (entry.message.contains("Success")) Color.Green else if (entry.message.contains("Failed")) Color.Yellow else Color.White,
+                    color = if (entry.message.contains("Success")) Color.Green else if (entry.message.contains("failed")) Color.Yellow else Color.White,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace
                 )
@@ -132,7 +134,7 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
         val response = json.decodeFromString<NowPlayingResponse>(jsonString)
         val nowPlaying = response.performances.firstOrNull()
             ?: throw IllegalStateException("Primary source returned no performances.")
-        
+
         if (nowPlaying.title.isBlank()) {
             throw IllegalStateException("Primary source returned empty title (commercial break?).")
         }
