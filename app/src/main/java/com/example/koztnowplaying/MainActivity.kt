@@ -1,6 +1,7 @@
 package com.example.koztnowplaying
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -13,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +69,18 @@ fun NowPlayingScreen() {
     var startTime by remember { mutableStateOf<String?>(null) }
     val logMessages = remember { mutableStateListOf<LogEntry>() }
     var showLogs by remember { mutableStateOf(false) }
+    var keepScreenOn by remember { mutableStateOf(false) }
+
+    // Effect to keep the screen on if the toggle is active
+    val view = LocalView.current
+    SideEffect {
+        val window = (view.context as? ComponentActivity)?.window
+        if (keepScreenOn) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -90,14 +105,14 @@ fun NowPlayingScreen() {
 
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime) { showLogs = !showLogs }
+                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
                     }
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
-                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime) { showLogs = !showLogs }
+                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
                     }
@@ -108,7 +123,11 @@ fun NowPlayingScreen() {
 }
 
 @Composable
-fun NowPlayingInfo(modifier: Modifier = Modifier, song: String, artist: String, album: String?, label: String?, startTime: String?, onToggleLogs: () -> Unit) {
+fun NowPlayingInfo(
+    modifier: Modifier = Modifier, 
+    song: String, artist: String, album: String?, label: String?, startTime: String?, 
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
+) {
     Column(
         modifier = modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Center,
@@ -131,8 +150,16 @@ fun NowPlayingInfo(modifier: Modifier = Modifier, song: String, artist: String, 
             Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
-            Text("Toggle Logs")
+        
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
+                Text("Toggle Logs")
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
+                Spacer(Modifier.width(8.dp))
+                Text("Keep Screen On", color = Color.White)
+            }
         }
     }
 }
