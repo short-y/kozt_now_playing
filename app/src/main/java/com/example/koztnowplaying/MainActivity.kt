@@ -75,24 +75,36 @@ fun NowPlayingScreen() {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Top section for Now Playing info
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f) // This takes up the remaining space
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center)
-            Text(text = artist, fontSize = 28.sp, textAlign = TextAlign.Center)
+    // Adaptive layout that changes based on screen width
+    BoxWithConstraints {
+        val isWideScreen = maxWidth > 600.dp
+
+        if (isWideScreen) {
+            // For wide screens, use a Row
+            Row(modifier = Modifier.fillMaxSize()) {
+                NowPlayingInfo(modifier = Modifier.weight(1f), song = song, artist = artist)
+                LogDisplay(modifier = Modifier.weight(1f), logMessages = logMessages)
+            }
+        } else {
+            // For narrow screens, use a Column
+            Column(modifier = Modifier.fillMaxSize()) {
+                NowPlayingInfo(modifier = Modifier.weight(1f), song = song, artist = artist)
+                LogDisplay(modifier = Modifier.weight(1f), logMessages = logMessages)
+            }
         }
-        // Bottom section for scrollable logs
-        LogDisplay(
-            modifier = Modifier.weight(0.5f), // The weight is applied here, to a direct child of the Column
-            logMessages = logMessages
-        )
+    }
+}
+
+@Composable
+fun NowPlayingInfo(modifier: Modifier = Modifier, song: String, artist: String) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = artist, fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp)
     }
 }
 
@@ -101,13 +113,12 @@ fun LogDisplay(modifier: Modifier = Modifier, logMessages: List<LogEntry>) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(logMessages.size) {
-        // Automatically scroll to the top when a new message arrives
         if (logMessages.isNotEmpty()) listState.animateScrollToItem(0)
     }
 
     Column(
-        modifier = modifier // The passed-in modifier is used here
-            .fillMaxWidth()
+        modifier = modifier
+            .fillMaxHeight()
             .background(Color.DarkGray)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
@@ -128,7 +139,6 @@ fun LogDisplay(modifier: Modifier = Modifier, logMessages: List<LogEntry>) {
 private val json = Json { ignoreUnknownKeys = true }
 
 suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
-    // 1. Try the primary JSON source first
     try {
         val jsonString = URL("https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json").readText()
         val response = json.decodeFromString<NowPlayingResponse>(jsonString)
@@ -141,7 +151,6 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
         FetchResult(nowPlaying.title, nowPlaying.artist, "Success: Parsed data from primary source.")
     } catch (e: Exception) {
         val errorLog = "Primary source failed: ${e.message}. Using fallback."
-        // 2. If primary fails, try the fallback
         try {
             val doc = Jsoup.connect("https://kozt.com/now-playing/").get()
             val songTitle = doc.selectFirst(".song-title")?.text() ?: ""
@@ -151,7 +160,6 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
             }
             FetchResult(songTitle, artistName, errorLog)
         } catch (e2: Exception) {
-            // 3. If both fail, return a hardcoded error
             FetchResult("Now Playing", "(Data currently unavailable)", "Fatal: Both sources failed. Retrying...")
         }
     }
