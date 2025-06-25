@@ -29,8 +29,12 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Data classes to match the actual JSON structure
 @Serializable
-data class NowPlayingInfo(val artist: String, val title: String)
+data class Performance(val artist: String, val title: String)
+
+@Serializable
+data class NowPlayingResponse(val performances: List<Performance>)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,9 +98,11 @@ suspend fun fetchNowPlaying(): Triple<String, String, String?> = withContext(Dis
     // 1. Try the primary JSON source first
     try {
         val jsonString = URL("https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json").readText()
-        val nowPlaying = json.decodeFromString<NowPlayingInfo>(jsonString)
-        // A check to ensure the title isn't empty (e.g. during a commercial)
-        if (nowPlaying.title.isNullOrBlank()) {
+        val response = json.decodeFromString<NowPlayingResponse>(jsonString)
+        val nowPlaying = response.performances.firstOrNull()
+            ?: throw IllegalStateException("Primary source returned no performances.")
+        
+        if (nowPlaying.title.isBlank()) {
             throw IllegalStateException("Primary source returned empty title.")
         }
         return@withContext Triple(nowPlaying.title, nowPlaying.artist, null) // Success
