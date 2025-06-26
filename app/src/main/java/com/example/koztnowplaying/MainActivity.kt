@@ -1,7 +1,6 @@
 package com.example.koztnowplaying
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -71,15 +70,10 @@ fun NowPlayingScreen() {
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
 
-    // Effect to keep the screen on if the toggle is active
+    // Effect to keep the screen on using the View's property
     val view = LocalView.current
     SideEffect {
-        val window = (view.context as? ComponentActivity)?.window
-        if (keepScreenOn) {
-            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+        view.keepScreenOn = keepScreenOn
     }
 
     LaunchedEffect(Unit) {
