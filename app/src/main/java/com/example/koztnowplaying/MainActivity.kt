@@ -140,8 +140,9 @@ fun NowPlayingInfo(
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(
