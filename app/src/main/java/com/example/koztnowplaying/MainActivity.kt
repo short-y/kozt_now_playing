@@ -46,12 +46,21 @@ import java.util.*
 
 // --- Data Classes ---
 @Serializable
-data class Performance(val artist: String, val title: String, val time: String? = null, val album: String? = null, val label: String? = null, val largeimage: String? = null)
+data class Performance(
+    val artist: String, val title: String, val time: String? = null, 
+    val album: String? = null, val label: String? = null, 
+    val smallimage: String? = null, val mediumimage: String? = null, val largeimage: String? = null
+)
 
 @Serializable
 data class NowPlayingResponse(val performances: List<Performance>)
 
-data class FetchResult(val song: String, val artist: String, val album: String?, val label: String?, val startTime: String?, val imageUrl: String?, val logMessage: String)
+data class FetchResult(
+    val song: String, val artist: String, val album: String?, val label: String?, 
+    val startTime: String?, val imageUris: ImageUris, val logMessage: String
+)
+
+data class ImageUris(val small: String?, val medium: String?, val large: String?)
 
 data class LogEntry(val timestamp: String, val message: String)
 
@@ -73,7 +82,7 @@ fun NowPlayingScreen() {
     var album by remember { mutableStateOf<String?>(null) }
     var label by remember { mutableStateOf<String?>(null) }
     var startTime by remember { mutableStateOf<String?>(null) }
-    var imageUrl by remember { mutableStateOf<String?>(null) }
+    var imageUris by remember { mutableStateOf(ImageUris(null, null, null)) }
     var lastUpdated by remember { mutableStateOf<String?>(null) }
     val logMessages = remember { mutableStateListOf<LogEntry>() }
     var showLogs by remember { mutableStateOf(false) }
@@ -89,7 +98,7 @@ fun NowPlayingScreen() {
             album = result.album
             label = result.label
             startTime = result.startTime
-            imageUrl = result.imageUrl
+            imageUris = result.imageUris
             lastUpdated = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
 
             val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
@@ -106,14 +115,14 @@ fun NowPlayingScreen() {
 
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, imageUrl, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
                     }
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
-                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUrl, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
                     }
@@ -126,7 +135,7 @@ fun NowPlayingScreen() {
 @Composable
 fun NowPlayingInfo(
     modifier: Modifier = Modifier, 
-    song: String, artist: String, album: String?, label: String?, startTime: String?, imageUrl: String?, lastUpdated: String?,
+    song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
 ) {
     Column(
@@ -134,12 +143,21 @@ fun NowPlayingInfo(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "Album Art",
-            modifier = Modifier.size(250.dp).clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop
-        )
+        BoxWithConstraints {
+            val imageSize = maxWidth * 0.8f
+            val selectedImageUri = when {
+                imageSize > 400.dp -> imageUris.large
+                imageSize > 200.dp -> imageUris.medium
+                else -> imageUris.small
+            }
+
+            AsyncImage(
+                model = selectedImageUri,
+                contentDescription = "Album Art",
+                modifier = Modifier.size(imageSize).clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(Modifier.height(24.dp))
         Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
         Spacer(Modifier.height(8.dp))
@@ -256,7 +274,8 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
         val nowPlaying = response.performances.firstOrNull() ?: throw IllegalStateException("Primary source returned no performances.")
         if (nowPlaying.title.isBlank()) throw IllegalStateException("Primary source returned empty title (commercial break?).")
         val formattedTime = nowPlaying.time?.let { formatTimestamp(it) }
-        FetchResult(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.label, formattedTime, nowPlaying.largeimage, "Success: Parsed data from primary source.")
+        val imageUris = ImageUris(nowPlaying.smallimage, nowPlaying.mediumimage, nowPlaying.largeimage)
+        FetchResult(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.label, formattedTime, imageUris, "Success: Parsed data from primary source.")
     } catch (e: Exception) {
         val errorLog = "Primary source failed: ${e.message}. Using fallback."
         try {
@@ -264,9 +283,9 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
             val songTitle = doc.selectFirst(".song-title")?.text() ?: ""
             val artistName = doc.selectFirst(".artist-name")?.text() ?: ""
             if (songTitle.isBlank() || artistName.isBlank()) throw IllegalStateException("Fallback source returned empty data.")
-            FetchResult(songTitle, artistName, null, null, null, null, errorLog)
+            FetchResult(songTitle, artistName, null, null, null, ImageUris(null, null, null), errorLog)
         } catch (e2: Exception) {
-            FetchResult("Now Playing", "(Data currently unavailable)", null, null, null, null, "Fatal: Both sources failed. Retrying...")
+            FetchResult("Now Playing", "(Data currently unavailable)", null, null, null, ImageUris(null, null, null), "Fatal: Both sources failed. Retrying...")
         }
     }
 }
