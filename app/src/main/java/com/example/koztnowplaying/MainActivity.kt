@@ -1,6 +1,9 @@
 package com.example.koztnowplaying
 
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -21,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,11 +73,7 @@ fun NowPlayingScreen() {
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
 
-    // Effect to keep the screen on using the View's property
-    val view = LocalView.current
-    SideEffect {
-        view.keepScreenOn = keepScreenOn
-    }
+    KeepScreenOn(keepScreenOn)
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -179,6 +178,28 @@ fun LogDisplay(modifier: Modifier = Modifier, logMessages: List<LogEntry>) {
             }
         }
     }
+}
+
+@Composable
+fun KeepScreenOn(keepOn: Boolean) {
+    val context = LocalContext.current
+    DisposableEffect(keepOn) {
+        val window = context.findActivity()?.window
+        if (keepOn) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+}
+
+fun Context.findActivity(): ComponentActivity? = when (this) {
+    is ComponentActivity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
