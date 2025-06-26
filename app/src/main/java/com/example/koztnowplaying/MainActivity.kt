@@ -154,8 +154,12 @@ fun NowPlayingInfo(
             AsyncImage(
                 model = selectedImageUri,
                 contentDescription = "Album Art",
-                modifier = Modifier.size(imageSize).clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier
+                    .size(imageSize)
+                    .clip(RoundedCornerShape(12.dp))
+                    .fillMaxWidth(0.8f) // Ensure it doesn't take up too much width
+                    .fillMaxHeight(0.6f), // Ensure it doesn't take up too much height
+                contentScale = ContentScale.Fit // Use ContentScale.Fit to scale down if needed
             )
         }
         Spacer(Modifier.height(24.dp))
