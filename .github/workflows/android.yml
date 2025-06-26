@@ -40,6 +40,18 @@ jobs:
         gradle-version: '8.4'
         arguments: :app:assembleRelease
 
+    - name: Add Android Build Tools to PATH
+      run: |
+        # Find the apksigner executable within ANDROID_HOME and add its directory to PATH
+        APKSIGNER_PATH=$(find "$ANDROID_HOME" -name "apksigner" -type f | head -n 1)
+        if [ -z "$APKSIGNER_PATH" ]; then
+          echo "Error: apksigner not found in ANDROID_HOME."
+          exit 1
+        fi
+        APKSIGNER_DIR=$(dirname "$APKSIGNER_PATH")
+        echo "Adding $APKSIGNER_DIR to PATH"
+        echo "$APKSIGNER_DIR" >> $GITHUB_PATH
+
     - name: Verify APK Signature
       run: |
         # Find the generated APK file
