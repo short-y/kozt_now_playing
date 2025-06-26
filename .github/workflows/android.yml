@@ -40,6 +40,14 @@ jobs:
         gradle-version: '8.4'
         arguments: :app:assembleRelease
 
+    - name: Verify APK Signature
+      run: |
+        # Find the generated APK file
+        APK_FILE=$(find app/build/outputs/apk/release/ -name "kozt-now-playing-*.apk")
+        # Verify the APK signature
+        # apksigner is part of Android SDK build-tools and should be available in PATH
+        apksigner verify --verbose "$APK_FILE"
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
