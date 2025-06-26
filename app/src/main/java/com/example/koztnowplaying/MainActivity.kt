@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.min
 import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -143,8 +144,10 @@ fun NowPlayingInfo(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        BoxWithConstraints {
-            val imageSize = maxWidth * 0.8f
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxHeight(0.5f) // Limit image section to 50% of height
+        ) {
+            val imageSize = min(maxHeight, maxWidth) * 0.8f // Use min of height/width for sizing
             val selectedImageUri = when {
                 imageSize > 400.dp -> imageUris.large
                 imageSize > 200.dp -> imageUris.medium
@@ -154,8 +157,11 @@ fun NowPlayingInfo(
             AsyncImage(
                 model = selectedImageUri,
                 contentDescription = "Album Art",
-                modifier = Modifier.size(imageSize).clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                modifier = Modifier
+                    .size(imageSize)
+                    .clip(RoundedCornerShape(12.dp))
+                    .align(Alignment.Center), // Center the image within the constrained box
+                contentScale = ContentScale.Fit // Use Fit to ensure the whole image is visible
             )
         }
         Spacer(Modifier.height(24.dp))
