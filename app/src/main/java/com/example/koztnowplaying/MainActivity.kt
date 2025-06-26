@@ -69,6 +69,7 @@ fun NowPlayingScreen() {
     var album by remember { mutableStateOf<String?>(null) }
     var label by remember { mutableStateOf<String?>(null) }
     var startTime by remember { mutableStateOf<String?>(null) }
+    var lastUpdated by remember { mutableStateOf<String?>(null) }
     val logMessages = remember { mutableStateListOf<LogEntry>() }
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
@@ -83,9 +84,10 @@ fun NowPlayingScreen() {
             album = result.album
             label = result.label
             startTime = result.startTime
+            lastUpdated = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
 
-            val timestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-            logMessages.add(0, LogEntry(timestamp, result.logMessage))
+            val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+            logMessages.add(0, LogEntry(logTimestamp, result.logMessage))
             if (logMessages.size > 100) logMessages.removeLast()
 
             delay(15000)
@@ -98,14 +100,14 @@ fun NowPlayingScreen() {
 
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
                     }
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
-                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
                     }
@@ -118,7 +120,7 @@ fun NowPlayingScreen() {
 @Composable
 fun NowPlayingInfo(
     modifier: Modifier = Modifier, 
-    song: String, artist: String, album: String?, label: String?, startTime: String?, 
+    song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
 ) {
     Column(
@@ -141,6 +143,10 @@ fun NowPlayingInfo(
         }
         if (startTime != null) {
             Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
+        }
+        if (lastUpdated != null) {
+            Spacer(Modifier.height(4.dp))
+            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(32.dp))
         
