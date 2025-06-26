@@ -148,9 +148,9 @@ fun NowPlayingInfo(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxHeight(0.5f) // Limit image section to 50% of height
+            modifier = Modifier.fillMaxHeight(0.3f) // Limit image section to 30% of height
         ) {
-            val imageSize = min(maxHeight, maxWidth) * 0.8f // Use min of height/width for sizing
+            val imageSize = min(maxHeight, maxWidth) * 0.7f // Use min of height/width for sizing
             val selectedImageUri = when {
                 imageSize > 400.dp -> imageUris.large
                 imageSize > 200.dp -> imageUris.medium
