@@ -1,3 +1,6 @@
+# Keystore file
+keystore.jks
+
 # Python
 .venv/
 __pycache__/

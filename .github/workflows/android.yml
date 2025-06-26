@@ -21,6 +21,18 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
+    - name: Decode Keystore and Setup Build
+      env:
+        SIGNING_KEY_STORE_BASE64: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+        KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEY_STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+      run: |
+        echo $SIGNING_KEY_STORE_BASE64 | base64 --decode > app/keystore.jks
+        echo "KEYSTORE_FILE=keystore.jks" >> $GITHUB_ENV
+        echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> $GITHUB_ENV
+        echo "KEY_ALIAS=${KEY_ALIAS}" >> $GITHUB_ENV
+        echo "KEY_PASSWORD=${KEYSTORE_PASSWORD}" >> $GITHUB_ENV
+
     - name: Build with Gradle
       uses: gradle/gradle-build-action@v2
       with:
