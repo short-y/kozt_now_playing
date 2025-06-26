@@ -139,12 +139,14 @@ fun NowPlayingInfo(
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints {
-            val imageSize = maxWidth * 0.8f
+            val imageSize = 300.dp
             val selectedImageUri = when {
                 imageSize > 400.dp -> imageUris.large
                 imageSize > 200.dp -> imageUris.medium
@@ -157,8 +159,7 @@ fun NowPlayingInfo(
                 modifier = Modifier
                     .size(imageSize)
                     .clip(RoundedCornerShape(12.dp))
-                    .fillMaxWidth(0.8f) // Ensure it doesn't take up too much width
-                    .fillMaxHeight(0.6f), // Ensure it doesn't take up too much height
+                    .fillMaxWidth(), // Ensure it doesn't take up too much width
                 contentScale = ContentScale.Fit // Use ContentScale.Fit to scale down if needed
             )
         }
