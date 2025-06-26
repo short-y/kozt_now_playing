@@ -188,7 +188,12 @@ fun NowPlayingInfo(
             Spacer(Modifier.height(4.dp))
             Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
         }
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp)) // Reduced spacer
+        val context = LocalContext.current
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val versionName = packageInfo.versionName
+        Text(text = "Version: $versionName", fontSize = 12.sp, color = Color.DarkGray, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp)) // Spacer before buttons
         
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
