@@ -136,26 +136,30 @@ fun NowPlayingScreen() {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
             val activity = (LocalContext.current as? ComponentActivity)
+            val scrollState = rememberScrollState()
 
-
-            if (isWideScreen) {
-                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    NowPlayingInfo(
-                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
-                    )
-                    if (showLogs) {
-                        LogDisplay(Modifier.weight(1f), logMessages)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+            ) {
+                if (isWideScreen) {
+                    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                        NowPlayingInfo(
+                            Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                            { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                        )
+                        if (showLogs) {
+                            LogDisplay(Modifier.weight(1f), logMessages)
+                        }
                     }
-                }
-            } else {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                } else {
                     NowPlayingInfo(
-                        Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                        Modifier.fillMaxWidth(), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
                         { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
                     )
                     if (showLogs) {
-                        LogDisplay(Modifier.weight(0.4f), logMessages)
+                        LogDisplay(Modifier.fillMaxWidth(), logMessages)
                     }
                 }
             }
