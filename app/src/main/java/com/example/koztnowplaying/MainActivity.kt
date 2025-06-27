@@ -30,12 +30,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.min
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -90,11 +93,28 @@ fun NowPlayingScreen() {
     val logMessages = remember { mutableStateListOf<LogEntry>() }
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
+    var isAppInForeground by remember { mutableStateOf(true) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isAppInForeground = true
+            } else if (event == Lifecycle.Event.ON_PAUSE) {
+                isAppInForeground = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
 
     KeepScreenOn(keepScreenOn)
 
-    LaunchedEffect(Unit) {
-        while (true) {
+    LaunchedEffect(isAppInForeground) {
+        while (isAppInForeground) {
             val result = fetchNowPlaying()
             song = result.song
             artist = result.artist
@@ -115,17 +135,25 @@ fun NowPlayingScreen() {
     AnimatedGradientBackground {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
+            val activity = (LocalContext.current as? ComponentActivity)
+
 
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    NowPlayingInfo(Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                    NowPlayingInfo(
+                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                    )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
                     }
                 }
             } else {
-                Column(Modifier.fillMaxSize()) {
-                    NowPlayingInfo(Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn, { keepScreenOn = it }, { showLogs = !showLogs })
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    NowPlayingInfo(
+                        Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                    )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
                     }
@@ -139,12 +167,11 @@ fun NowPlayingScreen() {
 fun NowPlayingInfo(
     modifier: Modifier = Modifier, 
     song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
 ) {
     Column(
         modifier = modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(
@@ -199,11 +226,15 @@ fun NowPlayingInfo(
             Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
                 Text("Toggle Logs")
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
-                Spacer(Modifier.width(8.dp))
-                Text("Keep Screen On", color = Color.White)
+            Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
+                Text("Exit")
             }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
+            Spacer(Modifier.width(8.dp))
+            Text("Keep Screen On", color = Color.White)
         }
     }
 }
