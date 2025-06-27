@@ -136,15 +136,10 @@ fun NowPlayingScreen() {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
             val activity = (LocalContext.current as? ComponentActivity)
-            val scrollState = rememberScrollState()
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 if (isWideScreen) {
-                    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         NowPlayingInfo(
                             Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
                             { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
@@ -154,14 +149,17 @@ fun NowPlayingScreen() {
                         }
                     }
                 } else {
-                    NowPlayingInfo(
-                        Modifier.fillMaxWidth(), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
-                    )
-                    if (showLogs) {
-                        LogDisplay(Modifier.fillMaxWidth(), logMessages)
+                    Column(Modifier.weight(1f)) {
+                        NowPlayingInfo(
+                            Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                            { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                        )
+                        if (showLogs) {
+                            LogDisplay(Modifier.weight(0.4f), logMessages)
+                        }
                     }
                 }
+                VersionInfo()
             }
         }
     }
@@ -175,7 +173,8 @@ fun NowPlayingInfo(
 ) {
     Column(
         modifier = modifier
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(
@@ -220,11 +219,6 @@ fun NowPlayingInfo(
             Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(16.dp)) // Reduced spacer
-        val context = LocalContext.current
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        val versionName = packageInfo.versionName
-        Text(text = "Version: $versionName", fontSize = 12.sp, color = Color.DarkGray, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(16.dp)) // Spacer before buttons
         
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
@@ -241,6 +235,20 @@ fun NowPlayingInfo(
             Text("Keep Screen On", color = Color.White)
         }
     }
+}
+
+@Composable
+fun VersionInfo() {
+    val context = LocalContext.current
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val versionName = packageInfo.versionName
+    Text(
+        text = "Version: $versionName",
+        fontSize = 12.sp,
+        color = Color.DarkGray,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(16.dp)
+    )
 }
 
 @Composable
