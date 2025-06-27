@@ -137,29 +137,26 @@ fun NowPlayingScreen() {
             val isWideScreen = maxWidth > 600.dp
             val activity = (LocalContext.current as? ComponentActivity)
 
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (isWideScreen) {
-                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        NowPlayingInfo(
-                            Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                            { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
-                        )
-                        if (showLogs) {
-                            LogDisplay(Modifier.weight(1f), logMessages)
-                        }
-                    }
-                } else {
-                    Column(Modifier.weight(1f)) {
-                        NowPlayingInfo(
-                            Modifier.weight(if (showLogs) 0.6f else 1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                            { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
-                        )
-                        if (showLogs) {
-                            LogDisplay(Modifier.weight(0.4f), logMessages)
-                        }
+            if (isWideScreen) {
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    NowPlayingInfo(
+                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                    )
+                    if (showLogs) {
+                        LogDisplay(Modifier.weight(1f), logMessages)
                     }
                 }
-                VersionInfo()
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    NowPlayingInfo(
+                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                    )
+                    if (showLogs) {
+                        LogDisplay(Modifier.weight(0.4f), logMessages)
+                    }
+                }
             }
         }
     }
@@ -234,6 +231,8 @@ fun NowPlayingInfo(
             Spacer(Modifier.width(8.dp))
             Text("Keep Screen On", color = Color.White)
         }
+        Spacer(Modifier.height(16.dp))
+        VersionInfo()
     }
 }
 
@@ -245,7 +244,7 @@ fun VersionInfo() {
     Text(
         text = "Version: $versionName",
         fontSize = 12.sp,
-        color = Color.DarkGray,
+        color = Color.White,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(16.dp)
     )
