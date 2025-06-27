@@ -141,7 +141,7 @@ fun NowPlayingScreen() {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     NowPlayingInfo(
                         Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }, maxHeight
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
@@ -151,7 +151,7 @@ fun NowPlayingScreen() {
                 Column(Modifier.fillMaxSize()) {
                     NowPlayingInfo(
                         Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }, maxHeight
+                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
@@ -166,7 +166,7 @@ fun NowPlayingScreen() {
 fun NowPlayingInfo(
     modifier: Modifier = Modifier, 
     song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit, screenHeight: Dp
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -175,8 +175,9 @@ fun NowPlayingInfo(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         BoxWithConstraints(
+            modifier = Modifier.fillMaxHeight(0.3f) // Limit image section to 30% of height
         ) {
-            val imageSize = (screenHeight * 0.35f).coerceAtMost(300.dp) // 35% of screen height, max 300.dp
+            val imageSize = min(maxHeight, maxWidth) * 0.7f // Use min of height/width for sizing
             val selectedImageUri = when {
                 imageSize > 400.dp -> imageUris.large
                 imageSize > 200.dp -> imageUris.medium
@@ -190,7 +191,7 @@ fun NowPlayingInfo(
                     .size(imageSize)
                     .clip(RoundedCornerShape(12.dp))
                     .align(Alignment.Center), // Center the image within the constrained box
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit // Use Fit to ensure the whole image is visible
             )
         }
         Spacer(Modifier.height(24.dp))
