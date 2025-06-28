@@ -148,7 +148,10 @@ fun NowPlayingScreen() {
                     }
                 }
             } else {
-                Column(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     NowPlayingInfo(
                         Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
                         { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
