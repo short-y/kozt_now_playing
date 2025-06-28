@@ -168,79 +168,90 @@ fun NowPlayingInfo(
     song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
 ) {
-    Column(
-        modifier = modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            val imageSize = min(maxWidth, maxHeight) * 0.9f
-            val selectedImageUri = when {
-                imageSize > 400.dp -> imageUris.large
-                imageSize > 200.dp -> imageUris.medium
-                else -> imageUris.small
-            }
+    SubcomposeLayout(modifier = modifier.padding(16.dp)) { constraints ->
+        val infoColumnPlaceable = subcompose("info") {
+            InfoColumn(song, artist, album, label, startTime, lastUpdated, keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit)
+        }.first().measure(constraints)
 
-            AsyncImage(
-                model = selectedImageUri,
-                contentDescription = "Album Art",
-                modifier = Modifier
-                    .size(imageSize)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Fit
-            )
-        }
+        val remainingHeight = constraints.maxHeight - infoColumnPlaceable.height
+        val imageSize = minOf(constraints.maxWidth, remainingHeight)
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(24.dp))
-            Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
-            Spacer(Modifier.height(8.dp))
-            Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White)
-            Spacer(Modifier.height(24.dp))
+        val imagePlaceable = subcompose("image") {
+            AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp())
+        }.first().measure(constraints)
 
-            if (!album.isNullOrBlank()) {
-                Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(4.dp))
-            }
-            if (!label.isNullOrBlank()) {
-                Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(4.dp))
-            }
-            if (startTime != null) {
-                Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
-            }
-            if (lastUpdated != null) {
-                Spacer(Modifier.height(4.dp))
-                Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
-            }
-            Spacer(Modifier.height(16.dp)) // Reduced spacer
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
-                    Text("Toggle Logs")
-                }
-                Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
-                    Text("Exit")
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
-                Spacer(Modifier.width(8.dp))
-                Text("Keep Screen On", color = Color.White)
-            }
-            Spacer(Modifier.height(16.dp))
-            VersionInfo()
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            val imageX = (constraints.maxWidth - imagePlaceable.width) / 2
+            val infoX = (constraints.maxWidth - infoColumnPlaceable.width) / 2
+            val infoY = constraints.maxHeight - infoColumnPlaceable.height
+            
+            imagePlaceable.placeRelative(imageX, 0)
+            infoColumnPlaceable.placeRelative(infoX, infoY)
         }
     }
+}
+
+@Composable
+private fun InfoColumn(
+    song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Bottom
+    ) {
+        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
+        Spacer(Modifier.height(8.dp))
+        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White)
+        Spacer(Modifier.height(24.dp))
+
+        if (!album.isNullOrBlank()) {
+            Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(4.dp))
+        }
+        if (!label.isNullOrBlank()) {
+            Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(4.dp))
+        }
+        if (startTime != null) {
+            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
+        }
+        if (lastUpdated != null) {
+            Spacer(Modifier.height(4.dp))
+            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+        }
+        Spacer(Modifier.height(16.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Toggle Logs") }
+            Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Exit") }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
+            Spacer(Modifier.width(8.dp))
+            Text("Keep Screen On", color = Color.White)
+        }
+        Spacer(Modifier.height(16.dp))
+        VersionInfo()
+    }
+}
+
+@Composable
+private fun AlbumArt(imageUris: ImageUris, imageSize: Dp) {
+    val selectedImageUri = when {
+        imageSize > 400.dp -> imageUris.large
+        imageSize > 200.dp -> imageUris.medium
+        else -> imageUris.small
+    }
+    AsyncImage(
+        model = selectedImageUri,
+        contentDescription = "Album Art",
+        modifier = Modifier
+            .size(imageSize)
+            .clip(RoundedCornerShape(12.dp)),
+        contentScale = ContentScale.Fit
+    )
 }
 
 @Composable
