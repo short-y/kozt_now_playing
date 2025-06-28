@@ -2,6 +2,7 @@ package com.example.koztnowplaying
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -84,6 +85,11 @@ class MainActivity : ComponentActivity() {
                 NowPlayingScreen()
             }
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        recreate()
     }
 }
 
@@ -199,18 +205,21 @@ fun NowPlayingScreen() {
 @Composable
 fun NowPlayingInfo(
     modifier: Modifier = Modifier,
-    song: String, artist: String, album: String?, label: String?, startTime: String?, 
-    imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean, 
+    song: String, artist: String, album: String?, label: String?, startTime: String?,
+    imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean,
     onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
     SubcomposeLayout(modifier = modifier.padding(16.dp)) { constraints ->
+        // Give text up to 60% of the height, leaving at least 40% for the image.
+        val infoConstraints = constraints.copy(maxHeight = (constraints.maxHeight * 0.6f).toInt())
         val infoColumnPlaceable = subcompose("info") {
             InfoColumn(song, artist, album, label, startTime, lastUpdated, keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit)
-        }.first().measure(constraints)
+        }.first().measure(infoConstraints)
 
+        // Remaining height for the image is now guaranteed to be substantial.
         val remainingHeight = constraints.maxHeight - infoColumnPlaceable.height
-        val imageSize = minOf(constraints.maxWidth, remainingHeight)
+        val imageSize = minOf(constraints.maxWidth, remainingHeight).coerceAtLeast(0) // Coerce just in case
 
         val imagePlaceable = subcompose("image") {
             AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp(), onImageLoaded = onImageLoaded)
@@ -220,7 +229,7 @@ fun NowPlayingInfo(
             val imageX = (constraints.maxWidth - imagePlaceable.width) / 2
             val infoX = (constraints.maxWidth - infoColumnPlaceable.width) / 2
             val infoY = constraints.maxHeight - infoColumnPlaceable.height
-            
+
             imagePlaceable.placeRelative(imageX, 0)
             infoColumnPlaceable.placeRelative(infoX, infoY)
         }
@@ -238,7 +247,9 @@ private fun InfoColumn(
         blurRadius = 8f
     )
 
+    // Add vertical scroll to handle cases where content overflows the allocated 60%
     Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
