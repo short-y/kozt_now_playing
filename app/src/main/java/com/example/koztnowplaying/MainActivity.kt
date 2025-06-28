@@ -211,15 +211,12 @@ fun NowPlayingInfo(
     onImageLoaded: (Drawable) -> Unit
 ) {
     SubcomposeLayout(modifier = modifier.padding(16.dp)) { constraints ->
-        // Give text up to 60% of the height, leaving at least 40% for the image.
-        val infoConstraints = constraints.copy(maxHeight = (constraints.maxHeight * 0.6f).toInt())
         val infoColumnPlaceable = subcompose("info") {
             InfoColumn(song, artist, album, label, startTime, lastUpdated, keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit)
-        }.first().measure(infoConstraints)
+        }.first().measure(constraints)
 
-        // Remaining height for the image is now guaranteed to be substantial.
         val remainingHeight = constraints.maxHeight - infoColumnPlaceable.height
-        val imageSize = minOf(constraints.maxWidth, remainingHeight).coerceAtLeast(0) // Coerce just in case
+        val imageSize = minOf(constraints.maxWidth, remainingHeight)
 
         val imagePlaceable = subcompose("image") {
             AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp(), onImageLoaded = onImageLoaded)
@@ -229,7 +226,7 @@ fun NowPlayingInfo(
             val imageX = (constraints.maxWidth - imagePlaceable.width) / 2
             val infoX = (constraints.maxWidth - infoColumnPlaceable.width) / 2
             val infoY = constraints.maxHeight - infoColumnPlaceable.height
-
+            
             imagePlaceable.placeRelative(imageX, 0)
             infoColumnPlaceable.placeRelative(infoX, infoY)
         }
@@ -247,9 +244,7 @@ private fun InfoColumn(
         blurRadius = 8f
     )
 
-    // Add vertical scroll to handle cases where content overflows the allocated 60%
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
