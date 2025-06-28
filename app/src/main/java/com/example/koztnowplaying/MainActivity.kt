@@ -164,20 +164,20 @@ fun NowPlayingScreen() {
 
 @Composable
 fun NowPlayingInfo(
-    modifier: Modifier = Modifier, 
+    modifier: Modifier = Modifier,
     song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
 ) {
     Column(
-        modifier = modifier
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxHeight(0.3f) // Limit image section to 30% of height
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
         ) {
-            val imageSize = min(maxHeight, maxWidth) * 0.7f // Use min of height/width for sizing
+            val imageSize = min(maxWidth, maxHeight) * 0.9f
             val selectedImageUri = when {
                 imageSize > 400.dp -> imageUris.large
                 imageSize > 200.dp -> imageUris.medium
@@ -189,50 +189,57 @@ fun NowPlayingInfo(
                 contentDescription = "Album Art",
                 modifier = Modifier
                     .size(imageSize)
-                    .clip(RoundedCornerShape(12.dp))
-                    .align(Alignment.Center), // Center the image within the constrained box
-                contentScale = ContentScale.Fit // Use Fit to ensure the whole image is visible
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Fit
             )
         }
-        Spacer(Modifier.height(24.dp))
-        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
-        Spacer(Modifier.height(8.dp))
-        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White)
-        Spacer(Modifier.height(24.dp))
 
-        if (!album.isNullOrBlank()) {
-            Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(4.dp))
-        }
-        if (!label.isNullOrBlank()) {
-            Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(4.dp))
-        }
-        if (startTime != null) {
-            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
-        }
-        if (lastUpdated != null) {
-            Spacer(Modifier.height(4.dp))
-            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
-        }
-        Spacer(Modifier.height(16.dp)) // Reduced spacer
-        
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
-                Text("Toggle Logs")
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(24.dp))
+            Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
+            Spacer(Modifier.height(8.dp))
+            Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White)
+            Spacer(Modifier.height(24.dp))
+
+            if (!album.isNullOrBlank()) {
+                Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(4.dp))
             }
-            Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
-                Text("Exit")
+            if (!label.isNullOrBlank()) {
+                Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(4.dp))
             }
+            if (startTime != null) {
+                Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
+            }
+            if (lastUpdated != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(16.dp)) // Reduced spacer
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
+                    Text("Toggle Logs")
+                }
+                Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) {
+                    Text("Exit")
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
+                Spacer(Modifier.width(8.dp))
+                Text("Keep Screen On", color = Color.White)
+            }
+            Spacer(Modifier.height(16.dp))
+            VersionInfo()
         }
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
-            Spacer(Modifier.width(8.dp))
-            Text("Keep Screen On", color = Color.White)
-        }
-        Spacer(Modifier.height(16.dp))
-        VersionInfo()
     }
 }
 
