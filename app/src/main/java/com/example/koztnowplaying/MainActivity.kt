@@ -232,29 +232,35 @@ private fun InfoColumn(
     song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
 ) {
+    val textShadow = androidx.compose.ui.graphics.Shadow(
+        color = Color.Black.copy(alpha = 0.7f),
+        offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+        blurRadius = 8f
+    )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
-        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White)
+        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         Spacer(Modifier.height(8.dp))
-        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White)
+        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         Spacer(Modifier.height(24.dp))
 
         if (!album.isNullOrBlank()) {
-            Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+            Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
             Spacer(Modifier.height(4.dp))
         }
         if (!label.isNullOrBlank()) {
-            Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center)
+            Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
             Spacer(Modifier.height(4.dp))
         }
         if (startTime != null) {
-            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center)
+            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         if (lastUpdated != null) {
             Spacer(Modifier.height(4.dp))
-            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
+            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         Spacer(Modifier.height(16.dp))
 
@@ -266,7 +272,7 @@ private fun InfoColumn(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
             Spacer(Modifier.width(8.dp))
-            Text("Keep Screen On", color = Color.White)
+            Text("Keep Screen On", color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         Spacer(Modifier.height(16.dp))
         VersionInfo()
