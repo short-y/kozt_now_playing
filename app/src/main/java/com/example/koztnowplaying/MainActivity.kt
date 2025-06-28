@@ -139,6 +139,11 @@ fun NowPlayingScreen() {
             imageUris = result.imageUris
             lastUpdated = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
 
+            // If there are no image URIs, reset the background gradient
+            if (result.imageUris.small == null && result.imageUris.medium == null && result.imageUris.large == null) {
+                gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
+            }
+
             val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
             logMessages.add(0, LogEntry(logTimestamp, result.logMessage))
             if (logMessages.size > 100) logMessages.removeLast()
