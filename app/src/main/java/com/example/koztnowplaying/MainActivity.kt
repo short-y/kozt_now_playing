@@ -210,26 +210,23 @@ fun NowPlayingInfo(
     onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
-    SubcomposeLayout(modifier = modifier.padding(16.dp)) { constraints ->
-        val infoColumnPlaceable = subcompose("info") {
-            InfoColumn(song, artist, album, label, startTime, lastUpdated, keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit)
-        }.first().measure(constraints)
-
-        val remainingHeight = constraints.maxHeight - infoColumnPlaceable.height
-        val imageSize = minOf(constraints.maxWidth, remainingHeight)
-
-        val imagePlaceable = subcompose("image") {
-            AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp(), onImageLoaded = onImageLoaded)
-        }.first().measure(constraints)
-
-        layout(constraints.maxWidth, constraints.maxHeight) {
-            val imageX = (constraints.maxWidth - imagePlaceable.width) / 2
-            val infoX = (constraints.maxWidth - infoColumnPlaceable.width) / 2
-            val infoY = constraints.maxHeight - infoColumnPlaceable.height
-            
-            imagePlaceable.placeRelative(imageX, 0)
-            infoColumnPlaceable.placeRelative(infoX, infoY)
+    Column(
+        modifier = modifier.padding(16.dp).fillMaxHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .aspectRatio(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            AlbumArt(imageUris = imageUris, onImageLoaded = onImageLoaded)
         }
+        Spacer(Modifier.height(16.dp))
+        InfoColumn(
+            song, artist, album, label, startTime, lastUpdated,
+            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit
+        )
     }
 }
 
@@ -245,6 +242,7 @@ private fun InfoColumn(
     )
 
     Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
@@ -286,26 +284,29 @@ private fun InfoColumn(
 }
 
 @Composable
-private fun AlbumArt(imageUris: ImageUris, imageSize: Dp, onImageLoaded: (Drawable) -> Unit) {
+private fun AlbumArt(imageUris: ImageUris, onImageLoaded: (Drawable) -> Unit) {
     val context = LocalContext.current
-    val selectedImageUri = when {
-        imageSize > 400.dp -> imageUris.large
-        imageSize > 200.dp -> imageUris.medium
-        else -> imageUris.small
-    }
+    BoxWithConstraints {
+        val imageSize = maxWidth
+        val selectedImageUri = when {
+            imageSize > 400.dp -> imageUris.large
+            imageSize > 200.dp -> imageUris.medium
+            else -> imageUris.small
+        }
 
-    AsyncImage(
-        model = ImageRequest.Builder(context)
-            .data(selectedImageUri)
-            .allowHardware(false) // Required for Palette
-            .build(),
-        contentDescription = "Album Art",
-        onSuccess = { result -> onImageLoaded(result.result.drawable) },
-        modifier = Modifier
-            .size(imageSize)
-            .clip(RoundedCornerShape(12.dp)),
-        contentScale = ContentScale.Fit
-    )
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data(selectedImageUri)
+                .allowHardware(false) // Required for Palette
+                .build(),
+            contentDescription = "Album Art",
+            onSuccess = { result -> onImageLoaded(result.result.drawable) },
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Fit
+        )
+    }
 }
 
 @Composable
