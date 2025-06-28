@@ -106,7 +106,6 @@ fun NowPlayingScreen() {
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
     var isAppInForeground by remember { mutableStateOf(true) }
-    val context = LocalContext.current
 
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
 
