@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import android.graphics.drawable.Drawable
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -100,7 +102,7 @@ fun NowPlayingScreen() {
     var isAppInForeground by remember { mutableStateOf(true) }
     val context = LocalContext.current
 
-    var gradientColors by remember { mutableStateOf(listOf(Color(0xFF0d47a1), Color.Black)) }
+    var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -153,10 +155,10 @@ fun NowPlayingScreen() {
                         onKeepScreenOnChanged = { keepScreenOn = it }, 
                         onToggleLogs = { showLogs = !showLogs }, 
                         onExit = { activity?.finish() },
-                        onImageLoaded = { drawable ->
+                        onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
-                                val dominantColor = palette?.dominantSwatch?.rgb?.let { Color(it) } ?: Color(0xFF0d47a1)
-                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: dominantColor
+                                val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
+                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { color -> Color(color) } ?: dominantColor
                                 gradientColors = listOf(vibrantColor, dominantColor)
                             }
                         }
@@ -177,10 +179,10 @@ fun NowPlayingScreen() {
                         onKeepScreenOnChanged = { keepScreenOn = it }, 
                         onToggleLogs = { showLogs = !showLogs }, 
                         onExit = { activity?.finish() },
-                        onImageLoaded = { drawable ->
+                        onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
-                                val dominantColor = palette?.dominantSwatch?.rgb?.let { Color(it) } ?: Color(0xFF0d47a1)
-                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: dominantColor
+                                val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
+                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { color -> Color(color) } ?: dominantColor
                                 gradientColors = listOf(vibrantColor, dominantColor)
                             }
                         }
