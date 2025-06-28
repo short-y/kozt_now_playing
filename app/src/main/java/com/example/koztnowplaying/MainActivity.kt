@@ -27,7 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
@@ -38,10 +38,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.min
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -96,6 +98,9 @@ fun NowPlayingScreen() {
     var showLogs by remember { mutableStateOf(false) }
     var keepScreenOn by remember { mutableStateOf(false) }
     var isAppInForeground by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+
+    var gradientColors by remember { mutableStateOf(listOf(Color(0xFF0d47a1), Color.Black)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -134,7 +139,7 @@ fun NowPlayingScreen() {
         }
     }
 
-    AnimatedGradientBackground {
+    AnimatedGradientBackground(gradientColors) {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
             val activity = (LocalContext.current as? ComponentActivity)
@@ -142,8 +147,19 @@ fun NowPlayingScreen() {
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     NowPlayingInfo(
-                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                        modifier = Modifier.weight(1f), 
+                        song = song, artist = artist, album = album, label = label, startTime = startTime, 
+                        imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
+                        onKeepScreenOnChanged = { keepScreenOn = it }, 
+                        onToggleLogs = { showLogs = !showLogs }, 
+                        onExit = { activity?.finish() },
+                        onImageLoaded = { drawable ->
+                            Palette.from(drawable.toBitmap()).generate { palette ->
+                                val dominantColor = palette?.dominantSwatch?.rgb?.let { Color(it) } ?: Color(0xFF0d47a1)
+                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: dominantColor
+                                gradientColors = listOf(vibrantColor, dominantColor)
+                            }
+                        }
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
@@ -155,8 +171,19 @@ fun NowPlayingScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     NowPlayingInfo(
-                        Modifier.weight(1f), song, artist, album, label, startTime, imageUris, lastUpdated, keepScreenOn,
-                        { keepScreenOn = it }, { showLogs = !showLogs }, { activity?.finish() }
+                        modifier = Modifier.weight(1f), 
+                        song = song, artist = artist, album = album, label = label, startTime = startTime, 
+                        imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
+                        onKeepScreenOnChanged = { keepScreenOn = it }, 
+                        onToggleLogs = { showLogs = !showLogs }, 
+                        onExit = { activity?.finish() },
+                        onImageLoaded = { drawable ->
+                            Palette.from(drawable.toBitmap()).generate { palette ->
+                                val dominantColor = palette?.dominantSwatch?.rgb?.let { Color(it) } ?: Color(0xFF0d47a1)
+                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { Color(it) } ?: dominantColor
+                                gradientColors = listOf(vibrantColor, dominantColor)
+                            }
+                        }
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
@@ -170,8 +197,10 @@ fun NowPlayingScreen() {
 @Composable
 fun NowPlayingInfo(
     modifier: Modifier = Modifier,
-    song: String, artist: String, album: String?, label: String?, startTime: String?, imageUris: ImageUris, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
+    song: String, artist: String, album: String?, label: String?, startTime: String?, 
+    imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean, 
+    onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit,
+    onImageLoaded: (Drawable) -> Unit
 ) {
     SubcomposeLayout(modifier = modifier.padding(16.dp)) { constraints ->
         val infoColumnPlaceable = subcompose("info") {
@@ -182,7 +211,7 @@ fun NowPlayingInfo(
         val imageSize = minOf(constraints.maxWidth, remainingHeight)
 
         val imagePlaceable = subcompose("image") {
-            AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp())
+            AlbumArt(imageUris = imageUris, imageSize = imageSize.toDp(), onImageLoaded = onImageLoaded)
         }.first().measure(constraints)
 
         layout(constraints.maxWidth, constraints.maxHeight) {
@@ -243,15 +272,21 @@ private fun InfoColumn(
 }
 
 @Composable
-private fun AlbumArt(imageUris: ImageUris, imageSize: Dp) {
+private fun AlbumArt(imageUris: ImageUris, imageSize: Dp, onImageLoaded: (Drawable) -> Unit) {
+    val context = LocalContext.current
     val selectedImageUri = when {
         imageSize > 400.dp -> imageUris.large
         imageSize > 200.dp -> imageUris.medium
         else -> imageUris.small
     }
+
     AsyncImage(
-        model = selectedImageUri,
+        model = ImageRequest.Builder(context)
+            .data(selectedImageUri)
+            .allowHardware(false) // Required for Palette
+            .build(),
         contentDescription = "Album Art",
+        onSuccess = { result -> onImageLoaded(result.result.drawable) },
         modifier = Modifier
             .size(imageSize)
             .clip(RoundedCornerShape(12.dp)),
@@ -319,7 +354,7 @@ fun Context.findActivity(): ComponentActivity? = when (this) {
 }
 
 @Composable
-fun AnimatedGradientBackground(content: @Composable () -> Unit) {
+fun AnimatedGradientBackground(colors: List<Color>, content: @Composable () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
     val animatedRadius = infiniteTransition.animateFloat(
         initialValue = 800f,
@@ -330,15 +365,19 @@ fun AnimatedGradientBackground(content: @Composable () -> Unit) {
         )
     )
 
-    val colors = listOf(Color(0xFF0d47a1), Color(0xFF000000))
-
     Surface(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().drawBehind { 
-            drawRect(Brush.radialGradient(
-                colors = colors,
-                radius = animatedRadius.value
-            ))
-        }) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    drawRect(
+                        Brush.radialGradient(
+                            colors = colors,
+                            radius = animatedRadius.value
+                        )
+                    )
+                }
+        ) {
             content()
         }
     }
