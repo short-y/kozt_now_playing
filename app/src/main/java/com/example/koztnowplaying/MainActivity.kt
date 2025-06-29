@@ -154,7 +154,6 @@ fun NowPlayingScreen() {
     AnimatedGradientBackground(gradientColors) {
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
-            val activity = (LocalContext.current as? ComponentActivity)
 
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
