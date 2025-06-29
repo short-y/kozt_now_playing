@@ -2,7 +2,9 @@ package com.example.koztnowplaying
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -76,6 +78,7 @@ data class FetchResult(
 data class ImageUris(val small: String?, val medium: String?, val large: String?)
 
 data class LogEntry(val timestamp: String, val message: String)
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,6 +155,7 @@ fun NowPlayingScreen() {
     }
 
     AnimatedGradientBackground(gradientColors) {
+        val context = LocalContext.current
         BoxWithConstraints {
             val isWideScreen = maxWidth > 600.dp
 
@@ -161,8 +165,12 @@ fun NowPlayingScreen() {
                         modifier = Modifier.weight(1f), 
                         song = song, artist = artist, album = album, label = label, startTime = startTime, 
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
-                        onKeepScreenOnChanged = { keepScreenOn = it }, 
-                        onToggleLogs = { showLogs = !showLogs }, 
+                        onKeepScreenOnChanged = { keepScreenOn = it },
+                        onToggleLogs = { showLogs = !showLogs },
+                        onHistoryClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
+                            context.startActivity(intent)
+                        },
                         onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
                                 val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
@@ -184,8 +192,12 @@ fun NowPlayingScreen() {
                         modifier = Modifier.weight(1f), 
                         song = song, artist = artist, album = album, label = label, startTime = startTime, 
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
-                        onKeepScreenOnChanged = { keepScreenOn = it }, 
-                        onToggleLogs = { showLogs = !showLogs }, 
+                        onKeepScreenOnChanged = { keepScreenOn = it },
+                        onToggleLogs = { showLogs = !showLogs },
+                        onHistoryClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
+                            context.startActivity(intent)
+                        },
                         onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
                                 val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
@@ -208,7 +220,7 @@ fun NowPlayingInfo(
     modifier: Modifier = Modifier,
     song: String, artist: String, album: String?, label: String?, startTime: String?,
     imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean,
-    onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit,
+    onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
     Column(
@@ -226,7 +238,7 @@ fun NowPlayingInfo(
         Spacer(Modifier.height(16.dp))
         InfoColumn(
             song, artist, album, label, startTime, lastUpdated,
-            keepScreenOn, onKeepScreenOnChanged, onToggleLogs
+            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onHistoryClick
         )
     }
 }
@@ -234,7 +246,7 @@ fun NowPlayingInfo(
 @Composable
 private fun InfoColumn(
     song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit
 ) {
     val textShadow = androidx.compose.ui.graphics.Shadow(
         color = Color.Black.copy(alpha = 0.7f),
@@ -271,6 +283,7 @@ private fun InfoColumn(
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Toggle Logs") }
+            Button(onClick = onHistoryClick, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("History") }
         }
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
