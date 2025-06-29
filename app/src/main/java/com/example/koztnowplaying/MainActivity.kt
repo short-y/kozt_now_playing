@@ -164,7 +164,6 @@ fun NowPlayingScreen() {
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
                         onKeepScreenOnChanged = { keepScreenOn = it }, 
                         onToggleLogs = { showLogs = !showLogs }, 
-                        onExit = { activity?.finish() },
                         onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
                                 val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
@@ -188,7 +187,6 @@ fun NowPlayingScreen() {
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
                         onKeepScreenOnChanged = { keepScreenOn = it }, 
                         onToggleLogs = { showLogs = !showLogs }, 
-                        onExit = { activity?.finish() },
                         onImageLoaded = { drawable: Drawable ->
                             Palette.from(drawable.toBitmap()).generate { palette ->
                                 val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
@@ -211,7 +209,7 @@ fun NowPlayingInfo(
     modifier: Modifier = Modifier,
     song: String, artist: String, album: String?, label: String?, startTime: String?,
     imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean,
-    onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit,
+    onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
     Column(
@@ -229,7 +227,7 @@ fun NowPlayingInfo(
         Spacer(Modifier.height(16.dp))
         InfoColumn(
             song, artist, album, label, startTime, lastUpdated,
-            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onExit
+            keepScreenOn, onKeepScreenOnChanged, onToggleLogs
         )
     }
 }
@@ -237,7 +235,7 @@ fun NowPlayingInfo(
 @Composable
 private fun InfoColumn(
     song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onExit: () -> Unit
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit
 ) {
     val textShadow = androidx.compose.ui.graphics.Shadow(
         color = Color.Black.copy(alpha = 0.7f),
@@ -274,7 +272,6 @@ private fun InfoColumn(
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Toggle Logs") }
-            Button(onClick = onExit, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Exit") }
         }
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
