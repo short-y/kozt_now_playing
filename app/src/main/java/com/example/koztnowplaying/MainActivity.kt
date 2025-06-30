@@ -70,6 +70,8 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
     val logMessages by viewModel.logMessages.collectAsState()
     val showLogs by viewModel.showLogs.collectAsState()
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
+    val resetBackground by viewModel.resetBackground.collectAsState()
+
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
     var textColor by remember { mutableStateOf(Color.White) }
 
@@ -77,6 +79,12 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
     LaunchedEffect(Unit) {
         viewModel.startFetching()
+    }
+
+    if (resetBackground) {
+        gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
+        textColor = Color.White
+        viewModel.backgroundResetHandled()
     }
 
     val onImageLoaded: (Drawable) -> Unit = { drawable ->

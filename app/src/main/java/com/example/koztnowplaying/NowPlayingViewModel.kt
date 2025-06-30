@@ -40,6 +40,9 @@ class NowPlayingViewModel : ViewModel() {
     private val _keepScreenOn = MutableStateFlow(false)
     val keepScreenOn = _keepScreenOn.asStateFlow()
 
+    private val _resetBackground = MutableStateFlow(false)
+    val resetBackground = _resetBackground.asStateFlow()
+
     fun startFetching() {
         viewModelScope.launch {
             while (true) {
@@ -52,6 +55,9 @@ class NowPlayingViewModel : ViewModel() {
                     _startTime.value = result.startTime
                     _imageUris.value = result.imageUris
                     _lastUpdated.value = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
+                    if (result.imageUris.large == null) {
+                        _resetBackground.value = true
+                    }
                 }
 
                 val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
@@ -63,6 +69,10 @@ class NowPlayingViewModel : ViewModel() {
                 delay(15000)
             }
         }
+    }
+
+    fun backgroundResetHandled() {
+        _resetBackground.value = false
     }
 
     fun toggleLogs() {
