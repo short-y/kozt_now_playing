@@ -71,11 +71,27 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
     val showLogs by viewModel.showLogs.collectAsState()
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
+    var textColor by remember { mutableStateOf(Color.White) }
 
     KeepScreenOn(keepScreenOn)
 
     LaunchedEffect(Unit) {
         viewModel.startFetching()
+    }
+
+    val onImageLoaded = { drawable: Drawable ->
+        Palette.from(drawable.toBitmap()).generate { palette ->
+            val dominantSwatch = palette?.dominantSwatch
+            if (dominantSwatch != null) {
+                val dominantColor = Color(dominantSwatch.rgb)
+                val contrastingColor = palette.darkMutedSwatch?.rgb?.let { Color(it) } ?: Color.Black
+                gradientColors = listOf(dominantColor, contrastingColor)
+                textColor = Color(dominantSwatch.bodyTextColor)
+            } else {
+                gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
+                textColor = Color.White
+            }
+        }
     }
 
     AnimatedGradientBackground(gradientColors) {
@@ -89,19 +105,14 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         modifier = Modifier.weight(1f),
                         song = song, artist = artist, album = album, label = label, startTime = startTime,
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
+                        textColor = textColor,
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
                             context.startActivity(intent)
                         },
-                        onImageLoaded = { drawable: Drawable ->
-                            Palette.from(drawable.toBitmap()).generate { palette ->
-                                val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
-                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { color -> Color(color) } ?: dominantColor
-                                gradientColors = listOf(vibrantColor, dominantColor)
-                            }
-                        }
+                        onImageLoaded = onImageLoaded
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
@@ -116,19 +127,14 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         modifier = Modifier.weight(1f),
                         song = song, artist = artist, album = album, label = label, startTime = startTime,
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
+                        textColor = textColor,
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
                             context.startActivity(intent)
                         },
-                        onImageLoaded = { drawable: Drawable ->
-                            Palette.from(drawable.toBitmap()).generate { palette ->
-                                val dominantColor = palette?.dominantSwatch?.rgb?.let { color -> Color(color) } ?: Color(0xFF0d47a1)
-                                val vibrantColor = palette?.vibrantSwatch?.rgb?.let { color -> Color(color) } ?: dominantColor
-                                gradientColors = listOf(vibrantColor, dominantColor)
-                            }
-                        }
+                        onImageLoaded = onImageLoaded
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
@@ -143,7 +149,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 fun NowPlayingInfo(
     modifier: Modifier = Modifier,
     song: String, artist: String, album: String?, label: String?, startTime: String?,
-    imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean,
+    imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean, textColor: Color,
     onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
@@ -162,7 +168,7 @@ fun NowPlayingInfo(
         Spacer(Modifier.height(16.dp))
         InfoColumn(
             song, artist, album, label, startTime, lastUpdated,
-            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onHistoryClick
+            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onHistoryClick, textColor
         )
     }
 }
@@ -170,7 +176,8 @@ fun NowPlayingInfo(
 @Composable
 private fun InfoColumn(
     song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
-    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit
+    keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit,
+    textColor: Color
 ) {
     val textShadow = androidx.compose.ui.graphics.Shadow(
         color = Color.Black.copy(alpha = 0.7f),
@@ -183,25 +190,25 @@ private fun InfoColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
-        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+        Text(text = song, fontSize = 40.sp, textAlign = TextAlign.Center, lineHeight = 48.sp, color = textColor, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         Spacer(Modifier.height(8.dp))
-        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+        Text(text = "Artist: $artist", fontSize = 28.sp, textAlign = TextAlign.Center, lineHeight = 36.sp, color = textColor, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         Spacer(Modifier.height(24.dp))
 
         if (!album.isNullOrBlank()) {
-            Text(text = "Album: $album", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+            Text(text = "Album: $album", fontSize = 16.sp, color = textColor.copy(alpha = 0.7f), textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
             Spacer(Modifier.height(4.dp))
         }
         if (!label.isNullOrBlank()) {
-            Text(text = "Label: $label", fontSize = 16.sp, color = Color.LightGray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+            Text(text = "Label: $label", fontSize = 16.sp, color = textColor.copy(alpha = 0.7f), textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
             Spacer(Modifier.height(4.dp))
         }
         if (startTime != null) {
-            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF87CEEB), textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+            Text(text = "Started at $startTime", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = textColor, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         if (lastUpdated != null) {
             Spacer(Modifier.height(4.dp))
-            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+            Text(text = "(Updated at $lastUpdated)", fontSize = 14.sp, color = textColor.copy(alpha = 0.5f), textAlign = TextAlign.Center, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         Spacer(Modifier.height(16.dp))
 
@@ -213,10 +220,10 @@ private fun InfoColumn(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = keepScreenOn, onCheckedChange = onKeepScreenOnChanged)
             Spacer(Modifier.width(8.dp))
-            Text("Keep Screen On", color = Color.White, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
+            Text("Keep Screen On", color = textColor, style = androidx.compose.ui.text.TextStyle(shadow = textShadow))
         }
         Spacer(Modifier.height(16.dp))
-        VersionInfo()
+        VersionInfo(textColor)
     }
 }
 
@@ -247,14 +254,14 @@ private fun AlbumArt(imageUris: ImageUris, onImageLoaded: (Drawable) -> Unit) {
 }
 
 @Composable
-fun VersionInfo() {
+fun VersionInfo(textColor: Color) {
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName
     Text(
         text = "Version: $versionName",
         fontSize = 12.sp,
-        color = Color.White,
+        color = textColor,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(16.dp)
     )
