@@ -79,7 +79,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
         viewModel.startFetching()
     }
 
-    val onImageLoaded = { drawable: Drawable ->
+    val onImageLoaded: (Drawable) -> Unit = { drawable ->
         Palette.from(drawable.toBitmap()).generate { palette ->
             val dominantSwatch = palette?.dominantSwatch
             if (dominantSwatch != null) {
