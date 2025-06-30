@@ -3,12 +3,12 @@ package com.example.koztnowplaying
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -34,124 +34,48 @@ import androidx.compose.ui.graphics.Color
 import android.graphics.drawable.Drawable
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import org.jsoup.Jsoup
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.*
-
-// --- Data Classes ---
-@Serializable
-data class Performance(
-    val artist: String, val title: String, val time: String? = null, 
-    val album: String? = null, val label: String? = null, 
-    val smallimage: String? = null, val mediumimage: String? = null, val largeimage: String? = null
-)
-
-@Serializable
-data class NowPlayingResponse(val performances: List<Performance>)
-
-data class FetchResult(
-    val song: String, val artist: String, val album: String?, val label: String?, 
-    val startTime: String?, val imageUris: ImageUris, val logMessage: String
-)
-
-data class ImageUris(val small: String?, val medium: String?, val large: String?)
-
-data class LogEntry(val timestamp: String, val message: String)
-
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: NowPlayingViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             KOZTNowPlayingTheme {
-                NowPlayingScreen()
+                NowPlayingScreen(viewModel)
             }
         }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        recreate()
     }
 }
 
 @Composable
-fun NowPlayingScreen() {
-    var song by remember { mutableStateOf("Loading...") }
-    var artist by remember { mutableStateOf("") }
-    var album by remember { mutableStateOf<String?>(null) }
-    var label by remember { mutableStateOf<String?>(null) }
-    var startTime by remember { mutableStateOf<String?>(null) }
-    var imageUris by remember { mutableStateOf(ImageUris(null, null, null)) }
-    var lastUpdated by remember { mutableStateOf<String?>(null) }
-    val logMessages = remember { mutableStateListOf<LogEntry>() }
-    var showLogs by remember { mutableStateOf(false) }
-    var keepScreenOn by remember { mutableStateOf(false) }
-    var isAppInForeground by remember { mutableStateOf(true) }
-
+fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
+    val song by viewModel.song.collectAsState()
+    val artist by viewModel.artist.collectAsState()
+    val album by viewModel.album.collectAsState()
+    val label by viewModel.label.collectAsState()
+    val startTime by viewModel.startTime.collectAsState()
+    val imageUris by viewModel.imageUris.collectAsState()
+    val lastUpdated by viewModel.lastUpdated.collectAsState()
+    val logMessages by viewModel.logMessages.collectAsState()
+    val showLogs by viewModel.showLogs.collectAsState()
+    val keepScreenOn by viewModel.keepScreenOn.collectAsState()
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                isAppInForeground = true
-            } else if (event == Lifecycle.Event.ON_PAUSE) {
-                isAppInForeground = false
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
 
     KeepScreenOn(keepScreenOn)
 
-    LaunchedEffect(isAppInForeground) {
-        while (isAppInForeground) {
-            val result = fetchNowPlaying()
-            song = result.song
-            artist = result.artist
-            album = result.album
-            label = result.label
-            startTime = result.startTime
-            imageUris = result.imageUris
-            lastUpdated = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
-
-            // If there are no image URIs, reset the background gradient
-            if (result.imageUris.small == null && result.imageUris.medium == null && result.imageUris.large == null) {
-                gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
-            }
-
-            val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-            logMessages.add(0, LogEntry(logTimestamp, result.logMessage))
-            if (logMessages.size > 100) logMessages.removeLast()
-
-            delay(15000)
-        }
+    LaunchedEffect(Unit) {
+        viewModel.startFetching()
     }
 
     AnimatedGradientBackground(gradientColors) {
@@ -162,11 +86,11 @@ fun NowPlayingScreen() {
             if (isWideScreen) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     NowPlayingInfo(
-                        modifier = Modifier.weight(1f), 
-                        song = song, artist = artist, album = album, label = label, startTime = startTime, 
+                        modifier = Modifier.weight(1f),
+                        song = song, artist = artist, album = album, label = label, startTime = startTime,
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
-                        onKeepScreenOnChanged = { keepScreenOn = it },
-                        onToggleLogs = { showLogs = !showLogs },
+                        onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
+                        onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
                             context.startActivity(intent)
@@ -189,11 +113,11 @@ fun NowPlayingScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     NowPlayingInfo(
-                        modifier = Modifier.weight(1f), 
-                        song = song, artist = artist, album = album, label = label, startTime = startTime, 
+                        modifier = Modifier.weight(1f),
+                        song = song, artist = artist, album = album, label = label, startTime = startTime,
                         imageUris = imageUris, lastUpdated = lastUpdated, keepScreenOn = keepScreenOn,
-                        onKeepScreenOnChanged = { keepScreenOn = it },
-                        onToggleLogs = { showLogs = !showLogs },
+                        onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
+                        onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
                             context.startActivity(intent)
@@ -409,40 +333,6 @@ fun AnimatedGradientBackground(colors: List<Color>, content: @Composable () -> U
             content()
         }
     }
-}
-
-private val json = Json { ignoreUnknownKeys = true }
-
-suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
-    try {
-        val jsonString = URL("https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json").readText()
-        val response = json.decodeFromString<NowPlayingResponse>(jsonString)
-        val nowPlaying = response.performances.firstOrNull() ?: throw IllegalStateException("Primary source returned no performances.")
-        if (nowPlaying.title.isBlank()) throw IllegalStateException("Primary source returned empty title (commercial break?).")
-        val formattedTime = nowPlaying.time?.let { formatTimestamp(it) }
-        val imageUris = ImageUris(nowPlaying.smallimage, nowPlaying.mediumimage, nowPlaying.largeimage)
-        FetchResult(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.label, formattedTime, imageUris, "Success: Parsed data from primary source.")
-    } catch (e: Exception) {
-        val errorLog = "Primary source failed: ${e.message}. Using fallback."
-        try {
-            val doc = Jsoup.connect("https://kozt.com/now-playing/").get()
-            val songTitle = doc.selectFirst(".song-title")?.text() ?: ""
-            val artistName = doc.selectFirst(".artist-name")?.text() ?: ""
-            if (songTitle.isBlank() || artistName.isBlank()) throw IllegalStateException("Fallback source returned empty data.")
-            FetchResult(songTitle, artistName, null, null, null, ImageUris(null, null, null), errorLog)
-        } catch (e2: Exception) {
-            FetchResult("Now Playing", "(Data currently unavailable)", null, null, null, ImageUris(null, null, null), "Fatal: Both sources failed. Retrying...")
-        }
-    }
-}
-
-fun formatTimestamp(isoTimestamp: String): String? {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
-        val outputFormat = SimpleDateFormat("h:mm a", Locale.US)
-        val date = inputFormat.parse(isoTimestamp)
-        date?.let { outputFormat.format(it) }
-    } catch (e: Exception) { null }
 }
 
 @Composable
