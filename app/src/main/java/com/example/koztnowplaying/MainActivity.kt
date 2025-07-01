@@ -56,6 +56,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.startFetching(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.startFetching(false)
+    }
 }
 
 @Composable
@@ -76,10 +86,6 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
     var textColor by remember { mutableStateOf(Color.White) }
 
     KeepScreenOn(keepScreenOn)
-
-    LaunchedEffect(Unit) {
-        viewModel.startFetching()
-    }
 
     if (resetBackground) {
         gradientColors = listOf(Color(0xFF0d47a1), Color.Black)

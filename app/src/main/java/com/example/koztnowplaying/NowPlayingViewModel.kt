@@ -43,9 +43,14 @@ class NowPlayingViewModel : ViewModel() {
     private val _resetBackground = MutableStateFlow(false)
     val resetBackground = _resetBackground.asStateFlow()
 
-    fun startFetching() {
+    private var isFetching = false
+
+    fun startFetching(shouldFetch: Boolean) {
+        isFetching = shouldFetch
+        if (!isFetching) return
+
         viewModelScope.launch {
-            while (true) {
+            while (isFetching) {
                 val result = fetchNowPlaying()
                 if (result.song != _song.value || result.artist != _artist.value) {
                     _song.value = result.song
