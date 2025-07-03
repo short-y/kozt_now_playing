@@ -81,6 +81,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
     val showLogs by viewModel.showLogs.collectAsState()
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
     val resetBackground by viewModel.resetBackground.collectAsState()
+    val songHistory by viewModel.songHistory.collectAsState()
 
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
     var textColor by remember { mutableStateOf(Color.White) }
@@ -122,10 +123,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         textColor = textColor,
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
-                        onHistoryClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
-                            context.startActivity(intent)
-                        },
+                        onHistoryClick = { viewModel.fetchHistory() },
                         onImageLoaded = onImageLoaded
                     )
                     if (showLogs) {
@@ -144,18 +142,18 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         textColor = textColor,
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
-                        onHistoryClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.last.fm/user/a7inchsleeve/library"))
-                            context.startActivity(intent)
-                        },
+                        onHistoryClick = { viewModel.fetchHistory() },
                         onImageLoaded = onImageLoaded
                     )
-                    if (showLogs) {
-                        LogDisplay(Modifier.weight(0.4f), logMessages)
                     }
-                }
-            }
         }
+    }
+
+    if (songHistory.isNotEmpty()) {
+        HistoryDialog(
+            songHistory = songHistory,
+            onDismiss = { viewModel.clearHistory() }
+        )
     }
 }
 
@@ -359,4 +357,34 @@ fun AnimatedGradientBackground(colors: List<Color>, content: @Composable () -> U
 @Composable
 fun KOZTNowPlayingTheme(content: @Composable () -> Unit) {
     MaterialTheme(content = content)
+}
+
+@Composable
+fun HistoryDialog(songHistory: List<SongHistoryItem>, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Black.copy(alpha = 0.8f),
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Recently Played", fontSize = 20.sp, color = Color.White, modifier = Modifier.padding(bottom = 8.dp))
+                LazyColumn {
+                    items(songHistory) { song ->
+                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                            Text(song.title, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("by ${song.artist}", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                            song.time?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text("Close")
+                }
+            }
+        }
+    }
 }

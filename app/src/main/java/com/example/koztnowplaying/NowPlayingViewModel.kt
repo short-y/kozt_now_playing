@@ -43,6 +43,9 @@ class NowPlayingViewModel : ViewModel() {
     private val _resetBackground = MutableStateFlow(false)
     val resetBackground = _resetBackground.asStateFlow()
 
+    private val _songHistory = MutableStateFlow<List<SongHistoryItem>>(emptyList())
+    val songHistory = _songHistory.asStateFlow()
+
     private var isFetching = false
 
     fun startFetching(shouldFetch: Boolean) {
@@ -74,6 +77,16 @@ class NowPlayingViewModel : ViewModel() {
                 delay(15000)
             }
         }
+    }
+
+    fun fetchHistory() {
+        viewModelScope.launch {
+            _songHistory.value = fetchNowPlayingHistory()
+        }
+    }
+
+    fun clearHistory() {
+        _songHistory.value = emptyList()
     }
 
     fun backgroundResetHandled() {

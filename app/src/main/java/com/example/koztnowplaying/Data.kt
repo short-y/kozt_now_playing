@@ -20,3 +20,5 @@ data class FetchResult(
 data class ImageUris(val small: String?, val medium: String?, val large: String?)
 
 data class LogEntry(val timestamp: String, val message: String)
+
+data class SongHistoryItem(val title: String, val artist: String, val time: String?)

@@ -33,6 +33,25 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
     }
 }
 
+suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispatchers.IO) {
+    try {
+        // Fetch 11 items to get the current song plus the last 10 played.
+        val jsonString = URL("https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json").readText()
+        val response = json.decodeFromString<NowPlayingResponse>(jsonString)
+        // We skip the first item because it's the currently playing song.
+        response.performances.drop(1).map {
+            SongHistoryItem(
+                title = it.title,
+                artist = it.artist,
+                time = it.time?.let { time -> formatTimestamp(time) }
+            )
+        }
+    } catch (e: Exception) {
+        // Return an empty list if the history fetch fails.
+        emptyList()
+    }
+}
+
 fun formatTimestamp(isoTimestamp: String): String? {
     return try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
