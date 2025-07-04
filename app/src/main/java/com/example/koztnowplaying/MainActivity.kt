@@ -89,16 +89,19 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
     val onImageLoaded: (Drawable) -> Unit = { drawable ->
         Palette.from(drawable.toBitmap()).generate { palette ->
-            val dominantSwatch = palette?.dominantSwatch
-            if (dominantSwatch != null) {
-                val dominantColor = Color(dominantSwatch.rgb)
-                val contrastingColor = palette.darkMutedSwatch?.rgb?.let { Color(it) } ?: Color.Black
-                gradientColors = listOf(dominantColor, contrastingColor)
-                textColor = Color(dominantSwatch.bodyTextColor)
-            } else {
-                gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
-                textColor = Color.White
+            val vibrant = palette?.vibrantSwatch
+            val muted = palette?.mutedSwatch
+            val dominant = palette?.dominantSwatch
+
+            val (primaryColor, secondaryColor, newTextColor) = when {
+                vibrant != null -> Triple(Color(vibrant.rgb), dominant?.rgb?.let { Color(it) } ?: Color.Black, Color(vibrant.bodyTextColor))
+                muted != null -> Triple(Color(muted.rgb), dominant?.rgb?.let { Color(it) } ?: Color.Black, Color(muted.bodyTextColor))
+                dominant != null -> Triple(Color(dominant.rgb), Color.Black, Color(dominant.bodyTextColor))
+                else -> Triple(Color(0xFF0d47a1), Color.Black, Color.White)
             }
+
+            gradientColors = listOf(primaryColor, secondaryColor)
+            textColor = newTextColor
         }
     }
 
