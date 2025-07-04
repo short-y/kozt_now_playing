@@ -43,22 +43,29 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
 }
 
 suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispatchers.IO) {
-    try {
-        // Fetch 11 items to get the current song plus the last 10 played.
-        val jsonString = URL("https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/2/4756/nowplaying.json").readText()
-        val response = json.decodeFromString<NowPlayingResponse>(jsonString)
-        // We skip the first item because it's the currently playing song.
-        response.performances.drop(1).map {
-            SongHistoryItem(
-                title = it.title,
-                artist = it.artist,
-                time = it.time?.let { time -> formatTimestamp(time) }
-            )
+    val urls = listOf(
+        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/11/4756/nowplaying.json",
+        "https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json"
+    )
+
+    for (url in urls) {
+        try {
+            val jsonString = URL(url).readText()
+            val response = json.decodeFromString<NowPlayingResponse>(jsonString)
+            // We skip the first item because it's the currently playing song.
+            return@withContext response.performances.drop(1).map {
+                SongHistoryItem(
+                    title = it.title,
+                    artist = it.artist,
+                    time = it.time?.let { time -> formatTimestamp(time) }
+                )
+            }
+        } catch (e: Exception) {
+            // Try the next URL
         }
-    } catch (e: Exception) {
-        // Return an empty list if the history fetch fails.
-        emptyList()
     }
+    // Return an empty list if all history fetches fail.
+    emptyList()
 }
 
 fun formatTimestamp(isoTimestamp: String): String? {
