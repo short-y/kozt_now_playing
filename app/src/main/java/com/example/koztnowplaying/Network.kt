@@ -12,12 +12,12 @@ private val json = Json { ignoreUnknownKeys = true }
 
 suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
     val urls = listOf(
-        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/2/4756/nowplaying.json",
-        "https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json"
+        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/2/4756/nowplaying.json" to "primary",
+        "https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json" to "backup"
     )
     var lastErrorLog = ""
 
-    for (url in urls) {
+    for ((url, sourceType) in urls) {
         try {
             val jsonString = URL(url).readText()
             val response = json.decodeFromString<NowPlayingResponse>(jsonString)
@@ -25,9 +25,9 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
             if (nowPlaying.title.isBlank()) throw IllegalStateException("Source returned empty title (commercial break?).")
             val formattedTime = nowPlaying.time?.let { formatTimestamp(it) }
             val imageUris = ImageUris(nowPlaying.smallimage, nowPlaying.mediumimage, nowPlaying.largeimage)
-            return@withContext FetchResult(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.label, formattedTime, imageUris, "Success: Parsed data from JSON source.")
+            return@withContext FetchResult(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.label, formattedTime, imageUris, "Success: Parsed data from $sourceType JSON source.")
         } catch (e: Exception) {
-            lastErrorLog += "URL $url failed: ${e.message}. "
+            lastErrorLog += "URL $url ($sourceType) failed: ${e.message}. "
         }
     }
 
@@ -44,11 +44,11 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
 
 suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispatchers.IO) {
     val urls = listOf(
-        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/11/4756/nowplaying.json",
-        "https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json"
+        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/11/4756/nowplaying.json" to "primary",
+        "https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json" to "backup"
     )
 
-    for (url in urls) {
+    for ((url, sourceType) in urls) {
         try {
             val jsonString = URL(url).readText()
             val response = json.decodeFromString<NowPlayingResponse>(jsonString)
