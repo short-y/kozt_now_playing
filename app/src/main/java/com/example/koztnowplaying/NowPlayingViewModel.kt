@@ -55,6 +55,8 @@ class NowPlayingViewModel : ViewModel() {
         viewModelScope.launch {
             while (isFetching) {
                 val result = fetchNowPlaying()
+                _lastUpdated.value = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
+
                 if (result.song != _song.value || result.artist != _artist.value) {
                     _song.value = result.song
                     _artist.value = result.artist
@@ -62,7 +64,6 @@ class NowPlayingViewModel : ViewModel() {
                     _label.value = result.label
                     _startTime.value = result.startTime
                     _imageUris.value = result.imageUris
-                    _lastUpdated.value = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
                     if (result.imageUris.large == null) {
                         _resetBackground.value = true
                     }
