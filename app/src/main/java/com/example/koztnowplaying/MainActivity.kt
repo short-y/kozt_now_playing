@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,7 +43,7 @@ import coil.request.ImageRequest
 
 fun getTextAndBackgroundColor(backgroundColor: Color): Pair<Color, Color> {
     val luminance = ColorUtils.calculateLuminance(backgroundColor.toArgb())
-    val alpha = 0.7f // 70% opacity
+    val alpha = 0.85f 
 
     return if (luminance > 0.5) {
         Pair(Color.Black, Color.White.copy(alpha = alpha))
@@ -287,15 +288,17 @@ private fun InfoColumn(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
                 onClick = onToggleLogs,
+                border = BorderStroke(1.dp, textColor),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = textBackgroundColor,
+                    containerColor = textBackgroundColor.copy(alpha = 0.9f),
                     contentColor = textColor
                 )
             ) { Text("Toggle Logs") }
             Button(
                 onClick = onHistoryClick,
+                border = BorderStroke(1.dp, textColor),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = textBackgroundColor,
+                    containerColor = textBackgroundColor.copy(alpha = 0.9f),
                     contentColor = textColor
                 )
             ) { Text("History") }
