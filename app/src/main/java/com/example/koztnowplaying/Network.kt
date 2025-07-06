@@ -48,7 +48,7 @@ suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispat
         "https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json" to "backup"
     )
 
-    for ((url, sourceType) in urls) {
+    for ((url, _) in urls) {
         try {
             val jsonString = URL(url).readText()
             val response = json.decodeFromString<NowPlayingResponse>(jsonString)

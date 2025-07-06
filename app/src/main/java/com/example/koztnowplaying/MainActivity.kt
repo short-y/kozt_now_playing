@@ -108,7 +108,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
             if (primarySwatch != null) {
                 val primaryColor = Color(primarySwatch.rgb)
                 val secondaryColor = palette?.darkMutedSwatch?.rgb?.let { Color(it) } ?: palette?.lightVibrantSwatch?.rgb?.let { Color(it) } ?: Color.Black
-                val newTextColor = Color(primarySwatch.bodyTextColor)
+                
 
                 gradientColors = listOf(primaryColor, secondaryColor)
                 val (fg, bg) = getTextAndBackgroundColor(primaryColor)
