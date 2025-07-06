@@ -33,10 +33,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+
+fun getTextBackgroundColor(backgroundColor: Int): Int {
+    val luminance = ColorUtils.calculateLuminance(backgroundColor)
+    val alpha = 180 // ~70% opacity
+
+    return if (luminance > 0.5) {
+        Color.argb(alpha, 0, 0, 0)
+    } else {
+        Color.argb(alpha, 255, 255, 255)
+    }
+}
 
 class MainActivity : ComponentActivity() {
     private val viewModel: NowPlayingViewModel by viewModels()
@@ -78,6 +90,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
     var textColor by remember { mutableStateOf(Color.White) }
+    var textBackgroundColor by remember { mutableStateOf(Color.Transparent) }
 
     KeepScreenOn(keepScreenOn)
 
@@ -98,6 +111,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
                 gradientColors = listOf(primaryColor, secondaryColor)
                 textColor = newTextColor
+                textBackgroundColor = Color(getTextBackgroundColor(primarySwatch.rgb))
             } else {
                 gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
                 textColor = Color.White
@@ -227,7 +241,9 @@ private fun InfoColumn(
     )
 
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
+        modifier = Modifier.verticalScroll(rememberScrollState())
+            .background(textBackgroundColor)
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom
     ) {
