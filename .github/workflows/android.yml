@@ -24,12 +24,13 @@ jobs:
     - name: Decode Keystore and Setup Build
       env:
         SIGNING_KEY_STORE_BASE64: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+        KEYSTORE_FILE: app/keystore.jks
         KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEY_STORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.SIGNING_KEY_ALIAS_PASSWORD }}
       run: |
-        printf "%s" "$SIGNING_KEY_STORE_BASE64" | base64 --decode > app/keystore.jks
-        echo "KEYSTORE_FILE=keystore.jks" >> $GITHUB_ENV
+        printf "%s" "$SIGNING_KEY_STORE_BASE64" | base64 --decode > $KEYSTORE_FILE
+        echo "KEYSTORE_FILE=${KEYSTORE_FILE}" >> $GITHUB_ENV
         echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}" >> $GITHUB_ENV
         echo "KEY_ALIAS=${KEY_ALIAS}" >> $GITHUB_ENV
         echo "KEY_PASSWORD=${KEY_PASSWORD}" >> $GITHUB_ENV
