@@ -2,6 +2,8 @@ package com.example.koztnowplaying
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.koztnowplaying.Constants.FETCH_INTERVAL_MS
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,37 +48,41 @@ class NowPlayingViewModel : ViewModel() {
     private val _songHistory = MutableStateFlow<List<SongHistoryItem>>(emptyList())
     val songHistory = _songHistory.asStateFlow()
 
-    private var isFetching = false
+    private var fetchJob: Job? = null
+    private val lastUpdatedFormat = SimpleDateFormat("h:mm:ss a", Locale.US)
+    private val logTimestampFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 
     fun startFetching(shouldFetch: Boolean) {
-        isFetching = shouldFetch
-        if (!isFetching) return
+        if (shouldFetch && fetchJob?.isActive != true) {
+            fetchJob = viewModelScope.launch {
+                while (true) {
+                    val result = fetchNowPlaying()
+                    _lastUpdated.value = lastUpdatedFormat.format(Date())
 
-        viewModelScope.launch {
-            while (isFetching) {
-                val result = fetchNowPlaying()
-                _lastUpdated.value = SimpleDateFormat("h:mm:ss a", Locale.US).format(Date())
-
-                if (result.song != _song.value || result.artist != _artist.value) {
-                    _song.value = result.song
-                    _artist.value = result.artist
-                    _album.value = result.album
-                    _label.value = result.label
-                    _startTime.value = result.startTime
-                    _imageUris.value = result.imageUris
-                    if (result.imageUris.large == null) {
-                        _resetBackground.value = true
+                    if (result.song != _song.value || result.artist != _artist.value) {
+                        _song.value = result.song
+                        _artist.value = result.artist
+                        _album.value = result.album
+                        _label.value = result.label
+                        _startTime.value = result.startTime
+                        _imageUris.value = result.imageUris
+                        if (result.imageUris.large == null) {
+                            _resetBackground.value = true
+                        }
                     }
+
+                    val logTimestamp = logTimestampFormat.format(Date())
+                    val newLogs = _logMessages.value.toMutableList()
+                    newLogs.add(0, LogEntry(logTimestamp, result.logMessage))
+                    if (newLogs.size > 100) newLogs.removeLast()
+                    _logMessages.value = newLogs
+
+                    delay(FETCH_INTERVAL_MS)
                 }
-
-                val logTimestamp = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
-                val newLogs = _logMessages.value.toMutableList()
-                newLogs.add(0, LogEntry(logTimestamp, result.logMessage))
-                if (newLogs.size > 100) newLogs.removeLast()
-                _logMessages.value = newLogs
-
-                delay(15000)
             }
+        } else if (!shouldFetch) {
+            fetchJob?.cancel()
+            fetchJob = null
         }
     }
 

@@ -1,5 +1,10 @@
 package com.example.koztnowplaying
 
+import com.example.koztnowplaying.Constants.HISTORY_BACKUP_URL
+import com.example.koztnowplaying.Constants.HISTORY_PRIMARY_URL
+import com.example.koztnowplaying.Constants.NOW_PLAYING_BACKUP_URL
+import com.example.koztnowplaying.Constants.NOW_PLAYING_FALLBACK_URL
+import com.example.koztnowplaying.Constants.NOW_PLAYING_PRIMARY_URL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -12,8 +17,8 @@ private val json = Json { ignoreUnknownKeys = true }
 
 suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
     val urls = listOf(
-        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/2/4756/nowplaying.json" to "primary",
-        "https://prt.amperwave.net/prt/nowplaying/2/2/3438/nowplaying.json" to "backup"
+        NOW_PLAYING_PRIMARY_URL to "primary",
+        NOW_PLAYING_BACKUP_URL to "backup"
     )
     var lastErrorLog = ""
 
@@ -32,7 +37,7 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
     }
 
     try {
-        val doc = Jsoup.connect("https://kozt.com/now-playing/").get()
+        val doc = Jsoup.connect(NOW_PLAYING_FALLBACK_URL).get()
         val songTitle = doc.selectFirst(".song-title")?.text() ?: ""
         val artistName = doc.selectFirst(".artist-name")?.text() ?: ""
         if (songTitle.isBlank() || artistName.isBlank()) throw IllegalStateException("Fallback source returned empty data.")
@@ -44,9 +49,10 @@ suspend fun fetchNowPlaying(): FetchResult = withContext(Dispatchers.IO) {
 
 suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispatchers.IO) {
     val urls = listOf(
-        "https://api-nowplaying.amperwave.net/api/v1/prtplus/nowplaying/11/4756/nowplaying.json" to "primary",
-        "https://prt.amperwave.net/prt/nowplaying/2/11/3438/nowplaying.json" to "backup"
+        HISTORY_PRIMARY_URL to "primary",
+        HISTORY_BACKUP_URL to "backup"
     )
+    var lastError: Exception? = null
 
     for ((url, _) in urls) {
         try {
@@ -61,10 +67,15 @@ suspend fun fetchNowPlayingHistory(): List<SongHistoryItem> = withContext(Dispat
                 )
             }
         } catch (e: Exception) {
+            lastError = e
             // Try the next URL
         }
     }
-    // Return an empty list if all history fetches fail.
+    // If we're here, all history fetches failed. Log the last error.
+    lastError?.let {
+        // A more robust logging mechanism would be used in a real app
+        println("Failed to fetch history from all sources: ${it.message}")
+    }
     emptyList()
 }
 
