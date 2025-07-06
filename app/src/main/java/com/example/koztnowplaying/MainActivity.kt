@@ -197,7 +197,14 @@ fun HistoryDialog(songHistory: List<SongHistoryItem>, onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.2f),
+                        contentColor = Color.White
+                    )
+                ) {
                     Text("Close")
                 }
             }
@@ -278,8 +285,20 @@ private fun InfoColumn(
         Spacer(Modifier.height(16.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = onToggleLogs, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("Toggle Logs") }
-            Button(onClick = onHistoryClick, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.3f))) { Text("History") }
+            Button(
+                onClick = onToggleLogs,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = textBackgroundColor,
+                    contentColor = textColor
+                )
+            ) { Text("Toggle Logs") }
+            Button(
+                onClick = onHistoryClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = textBackgroundColor,
+                    contentColor = textColor
+                )
+            ) { Text("History") }
         }
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
