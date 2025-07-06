@@ -40,14 +40,14 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
-fun getTextBackgroundColor(backgroundColor: Color): Color {
+fun getTextAndBackgroundColor(backgroundColor: Color): Pair<Color, Color> {
     val luminance = ColorUtils.calculateLuminance(backgroundColor.toArgb())
     val alpha = 0.7f // 70% opacity
 
     return if (luminance > 0.5) {
-        Color.Black.copy(alpha = alpha)
+        Pair(Color.Black, Color.White.copy(alpha = alpha))
     } else {
-        Color.White.copy(alpha = alpha)
+        Pair(Color.White, Color.Black.copy(alpha = alpha))
     }
 }
 
@@ -91,7 +91,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
     var gradientColors by remember { mutableStateOf<List<Color>>(listOf(Color(0xFF0d47a1), Color.Black)) }
     var textColor by remember { mutableStateOf(Color.White) }
-    var textBackgroundColor by remember { mutableStateOf(Color.Transparent) }
+    var textBackgroundColor by remember { mutableStateOf(Color.Black.copy(alpha = 0.7f)) }
 
     KeepScreenOn(keepScreenOn)
 
@@ -111,11 +111,13 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                 val newTextColor = Color(primarySwatch.bodyTextColor)
 
                 gradientColors = listOf(primaryColor, secondaryColor)
-                textColor = newTextColor
-                textBackgroundColor = getTextBackgroundColor(Color(primarySwatch.rgb))
+                val (fg, bg) = getTextAndBackgroundColor(primaryColor)
+                textColor = fg
+                textBackgroundColor = bg
             } else {
                 gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
                 textColor = Color.White
+                textBackgroundColor = Color.Black.copy(alpha = 0.7f)
             }
         }
     }
