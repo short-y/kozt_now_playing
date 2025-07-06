@@ -247,6 +247,7 @@ private fun InfoColumn(
 
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState())
+            .fillMaxWidth()
             .background(textBackgroundColor)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
