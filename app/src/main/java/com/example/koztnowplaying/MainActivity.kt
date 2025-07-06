@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -39,14 +40,14 @@ import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
-fun getTextBackgroundColor(backgroundColor: Int): Int {
-    val luminance = ColorUtils.calculateLuminance(backgroundColor)
-    val alpha = 180 // ~70% opacity
+fun getTextBackgroundColor(backgroundColor: Color): Color {
+    val luminance = ColorUtils.calculateLuminance(backgroundColor.toArgb())
+    val alpha = 0.7f // 70% opacity
 
     return if (luminance > 0.5) {
-        Color.argb(alpha, 0, 0, 0)
+        Color.Black.copy(alpha = alpha)
     } else {
-        Color.argb(alpha, 255, 255, 255)
+        Color.White.copy(alpha = alpha)
     }
 }
 
@@ -111,7 +112,7 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
 
                 gradientColors = listOf(primaryColor, secondaryColor)
                 textColor = newTextColor
-                textBackgroundColor = Color(getTextBackgroundColor(primarySwatch.rgb))
+                textBackgroundColor = getTextBackgroundColor(Color(primarySwatch.rgb))
             } else {
                 gradientColors = listOf(Color(0xFF0d47a1), Color.Black)
                 textColor = Color.White
@@ -133,7 +134,8 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = { viewModel.fetchHistory() },
-                        onImageLoaded = onImageLoaded
+                        onImageLoaded = onImageLoaded,
+                        textBackgroundColor = textBackgroundColor
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(1f), logMessages)
@@ -152,7 +154,8 @@ fun NowPlayingScreen(viewModel: NowPlayingViewModel) {
                         onKeepScreenOnChanged = { viewModel.setKeepScreenOn(it) },
                         onToggleLogs = { viewModel.toggleLogs() },
                         onHistoryClick = { viewModel.fetchHistory() },
-                        onImageLoaded = onImageLoaded
+                        onImageLoaded = onImageLoaded,
+                        textBackgroundColor = textBackgroundColor
                     )
                     if (showLogs) {
                         LogDisplay(Modifier.weight(0.4f), logMessages)
@@ -205,6 +208,7 @@ fun NowPlayingInfo(
     modifier: Modifier = Modifier,
     song: String, artist: String, album: String?, label: String?, startTime: String?,
     imageUris: ImageUris, lastUpdated: String?, keepScreenOn: Boolean, textColor: Color,
+    textBackgroundColor: Color,
     onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit,
     onImageLoaded: (Drawable) -> Unit
 ) {
@@ -223,7 +227,7 @@ fun NowPlayingInfo(
         Spacer(Modifier.height(16.dp))
         InfoColumn(
             song, artist, album, label, startTime, lastUpdated,
-            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onHistoryClick, textColor
+            keepScreenOn, onKeepScreenOnChanged, onToggleLogs, onHistoryClick, textColor, textBackgroundColor
         )
     }
 }
@@ -232,7 +236,8 @@ fun NowPlayingInfo(
 private fun InfoColumn(
     song: String, artist: String, album: String?, label: String?, startTime: String?, lastUpdated: String?,
     keepScreenOn: Boolean, onKeepScreenOnChanged: (Boolean) -> Unit, onToggleLogs: () -> Unit, onHistoryClick: () -> Unit,
-    textColor: Color
+    textColor: Color,
+    textBackgroundColor: Color
 ) {
     val textShadow = androidx.compose.ui.graphics.Shadow(
         color = Color.Black.copy(alpha = 0.7f),
